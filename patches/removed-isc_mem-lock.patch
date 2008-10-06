@@ -1,0 +1,531 @@
+diff -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' --recursive bind-9.3.5-P2/lib/isc/mem.c /u/t/a/tack/Desktop/bind-9.3.5-P2/lib/isc/mem.c
+118c118
+< 	isc_mutex_t		lock;
+---
+> 	// isc_mutex_t		lock;
+720,728d719
+< 	if (isc_mutex_init(&ctx->lock) != ISC_R_SUCCESS) {
+< 		UNEXPECTED_ERROR(__FILE__, __LINE__,
+< 				 "isc_mutex_init() %s",
+< 				 isc_msgcat_get(isc_msgcat, ISC_MSGSET_GENERAL,
+< 						ISC_MSG_FAILED, "failed"));
+< 		(memfree)(arg, ctx);
+< 		return (ISC_R_UNEXPECTED);
+< 	}
+< 
+819d809
+< 		DESTROYLOCK(&ctx->lock);
+893d882
+< 	DESTROYLOCK(&ctx->lock);
+904,906c893,895
+< 	LOCK(&source->lock);
+< 	source->references++;
+< 	UNLOCK(&source->lock);
+---
+> 	__tm_atomic {
+> 		source->references++;
+> 	}
+920,925c909,914
+< 	LOCK(&ctx->lock);
+< 	INSIST(ctx->references > 0);
+< 	ctx->references--;
+< 	if (ctx->references == 0)
+< 		want_destroy = ISC_TRUE;
+< 	UNLOCK(&ctx->lock);
+---
+> 	__tm_atomic {
+> 		INSIST(ctx->references > 0);
+> 		ctx->references--;
+> 		if (ctx->references == 0)
+> 			want_destroy = ISC_TRUE;
+> 	}
+964,965c953,954
+< 	LOCK(&ctx->lock);
+< 	mem_putstats(ctx, ptr, size);
+---
+> 	__tm_atomic {
+> 		mem_putstats(ctx, ptr, size);
+966a956,961
+> 	
+> 		DELETE_TRACE(ctx, ptr, size, file, line);
+> 		INSIST(ctx->references > 0);
+> 		ctx->references--;
+> 		if (ctx->references == 0)
+> 			want_destroy = ISC_TRUE;
+968,974c963
+< 	DELETE_TRACE(ctx, ptr, size, file, line);
+< 	INSIST(ctx->references > 0);
+< 	ctx->references--;
+< 	if (ctx->references == 0)
+< 		want_destroy = ISC_TRUE;
+< 
+< 	UNLOCK(&ctx->lock);
+---
+> 	}
+993c982
+< 	LOCK(&ctx->lock);
+---
+> 	__tm_atomic {
+995,996c984,985
+< 	if (ctx->references != 1)
+< 		print_active(ctx, stderr);
+---
+> 		if (ctx->references != 1)
+> 			print_active(ctx, stderr);
+998,1000c987,989
+< 	REQUIRE(ctx->references == 1);
+< 	ctx->references--;
+< 	UNLOCK(&ctx->lock);
+---
+> 		REQUIRE(ctx->references == 1);
+> 		ctx->references--;
+> 	}
+1011,1013c1000,1002
+< 	LOCK(&ctx->lock);
+< 	res = isc_ondestroy_register(&ctx->ondestroy, task, event);
+< 	UNLOCK(&ctx->lock);
+---
+> 	__tm_atomic {
+> 		res = isc_ondestroy_register(&ctx->ondestroy, task, event);
+> 	}
+1031,1033c1020,1022
+< 	LOCK(&ctx->lock);
+< 	if (ptr != NULL)
+< 		mem_getstats(ctx, size);
+---
+> 	__tm_atomic {
+> 		if (ptr != NULL)
+> 			mem_getstats(ctx, size);
+1035,1047c1024,1037
+< 
+< 	ADD_TRACE(ctx, ptr, size, file, line);
+< 	if (ctx->hi_water != 0U && !ctx->hi_called &&
+< 	    ctx->inuse > ctx->hi_water) {
+< 		ctx->hi_called = ISC_TRUE;
+< 		call_water = ISC_TRUE;
+< 	}
+< 	if (ctx->inuse > ctx->maxinuse) {
+< 		ctx->maxinuse = ctx->inuse;
+< 		if (ctx->hi_water != 0U && ctx->inuse > ctx->hi_water &&
+< 		    (isc_mem_debugging & ISC_MEM_DEBUGUSAGE) != 0)
+< 			fprintf(stderr, "maxinuse = %lu\n",
+< 				(unsigned long)ctx->inuse);
+---
+> 	
+> 		ADD_TRACE(ctx, ptr, size, file, line);
+> 		if (ctx->hi_water != 0U && !ctx->hi_called &&
+> 		ctx->inuse > ctx->hi_water) {
+> 			ctx->hi_called = ISC_TRUE;
+> 			call_water = ISC_TRUE;
+> 		}
+> 		if (ctx->inuse > ctx->maxinuse) {
+> 			ctx->maxinuse = ctx->inuse;
+> 			if (ctx->hi_water != 0U && ctx->inuse > ctx->hi_water &&
+> 			(isc_mem_debugging & ISC_MEM_DEBUGUSAGE) != 0)
+> 				fprintf(stderr, "maxinuse = %lu\n",
+> 					(unsigned long)ctx->inuse);
+> 		}
+1049d1038
+< 	UNLOCK(&ctx->lock);
+1070,1071c1059,1060
+< 	LOCK(&ctx->lock);
+< 	mem_putstats(ctx, ptr, size);
+---
+> 	__tm_atomic {
+> 		mem_putstats(ctx, ptr, size);
+1073,1086c1062,1076
+< 
+< 	DELETE_TRACE(ctx, ptr, size, file, line);
+< 
+< 	/*
+< 	 * The check against ctx->lo_water == 0 is for the condition
+< 	 * when the context was pushed over hi_water but then had
+< 	 * isc_mem_setwater() called with 0 for hi_water and lo_water.
+< 	 */
+< 	if (ctx->hi_called && 
+< 	    (ctx->inuse < ctx->lo_water || ctx->lo_water == 0U)) {
+< 		ctx->hi_called = ISC_FALSE;
+< 
+< 		if (ctx->water != NULL)
+< 			call_water = ISC_TRUE;
+---
+> 	
+> 		DELETE_TRACE(ctx, ptr, size, file, line);
+> 	
+> 		/*
+> 		* The check against ctx->lo_water == 0 is for the condition
+> 		* when the context was pushed over hi_water but then had
+> 		* isc_mem_setwater() called with 0 for hi_water and lo_water.
+> 		*/
+> 		if (ctx->hi_called && 
+> 		(ctx->inuse < ctx->lo_water || ctx->lo_water == 0U)) {
+> 			ctx->hi_called = ISC_FALSE;
+> 	
+> 			if (ctx->water != NULL)
+> 				call_water = ISC_TRUE;
+> 		}
+1088d1077
+< 	UNLOCK(&ctx->lock);
+1145c1134
+< 	LOCK(&ctx->lock);
+---
+> 	__tm_atomic {
+1147,1154c1136,1143
+< 	for (i = 0; i <= ctx->max_size; i++) {
+< 		s = &ctx->stats[i];
+< 
+< 		if (s->totalgets == 0U && s->gets == 0U)
+< 			continue;
+< 		fprintf(out, "%s%5lu: %11lu gets, %11lu rem",
+< 			(i == ctx->max_size) ? ">=" : "  ",
+< 			(unsigned long) i, s->totalgets, s->gets);
+---
+> 		for (i = 0; i <= ctx->max_size; i++) {
+> 			s = &ctx->stats[i];
+> 	
+> 			if (s->totalgets == 0U && s->gets == 0U)
+> 				continue;
+> 			fprintf(out, "%s%5lu: %11lu gets, %11lu rem",
+> 				(i == ctx->max_size) ? ">=" : "  ",
+> 				(unsigned long) i, s->totalgets, s->gets);
+1156,1158c1145,1147
+< 		if (s->blocks != 0 || s->freefrags != 0)
+< 			fprintf(out, " (%lu bl, %lu ff)",
+< 				s->blocks, s->freefrags);
+---
+> 			if (s->blocks != 0 || s->freefrags != 0)
+> 				fprintf(out, " (%lu bl, %lu ff)",
+> 					s->blocks, s->freefrags);
+1160,1161c1149,1150
+< 		fputc('\n', out);
+< 	}
+---
+> 			fputc('\n', out);
+> 		}
+1163,1201c1152,1190
+< 	/*
+< 	 * Note that since a pool can be locked now, these stats might be
+< 	 * somewhat off if the pool is in active use at the time the stats
+< 	 * are dumped.  The link fields are protected by the isc_mem_t's
+< 	 * lock, however, so walking this list and extracting integers from
+< 	 * stats fields is always safe.
+< 	 */
+< 	pool = ISC_LIST_HEAD(ctx->pools);
+< 	if (pool != NULL) {
+< 		fprintf(out, isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 					    ISC_MSG_POOLSTATS,
+< 					    "[Pool statistics]\n"));
+< 		fprintf(out, "%15s %10s %10s %10s %10s %10s %10s %10s %1s\n",
+< 			isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 				       ISC_MSG_POOLNAME, "name"),
+< 			isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 				       ISC_MSG_POOLSIZE, "size"),
+< 			isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 				       ISC_MSG_POOLMAXALLOC, "maxalloc"),
+< 			isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 				       ISC_MSG_POOLALLOCATED, "allocated"),
+< 			isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 				       ISC_MSG_POOLFREECOUNT, "freecount"),
+< 			isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 				       ISC_MSG_POOLFREEMAX, "freemax"),
+< 			isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 				       ISC_MSG_POOLFILLCOUNT, "fillcount"),
+< 			isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+< 				       ISC_MSG_POOLGETS, "gets"),
+< 			"L");
+< 	}
+< 	while (pool != NULL) {
+< 		fprintf(out, "%15s %10lu %10u %10u %10u %10u %10u %10u %s\n",
+< 			pool->name, (unsigned long) pool->size, pool->maxalloc,
+< 			pool->allocated, pool->freecount, pool->freemax,
+< 			pool->fillcount, pool->gets,
+< 			(pool->lock == NULL ? "N" : "Y"));
+< 		pool = ISC_LIST_NEXT(pool, link);
+< 	}
+---
+> 		/*
+> 		* Note that since a pool can be locked now, these stats might be
+> 		* somewhat off if the pool is in active use at the time the stats
+> 		* are dumped.  The link fields are protected by the isc_mem_t's
+> 		* lock, however, so walking this list and extracting integers from
+> 		* stats fields is always safe.
+> 		*/
+> 		pool = ISC_LIST_HEAD(ctx->pools);
+> 		if (pool != NULL) {
+> 			fprintf(out, isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 						ISC_MSG_POOLSTATS,
+> 						"[Pool statistics]\n"));
+> 			fprintf(out, "%15s %10s %10s %10s %10s %10s %10s %10s %1s\n",
+> 				isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 					ISC_MSG_POOLNAME, "name"),
+> 				isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 					ISC_MSG_POOLSIZE, "size"),
+> 				isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 					ISC_MSG_POOLMAXALLOC, "maxalloc"),
+> 				isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 					ISC_MSG_POOLALLOCATED, "allocated"),
+> 				isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 					ISC_MSG_POOLFREECOUNT, "freecount"),
+> 				isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 					ISC_MSG_POOLFREEMAX, "freemax"),
+> 				isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 					ISC_MSG_POOLFILLCOUNT, "fillcount"),
+> 				isc_msgcat_get(isc_msgcat, ISC_MSGSET_MEM,
+> 					ISC_MSG_POOLGETS, "gets"),
+> 				"L");
+> 		}
+> 		while (pool != NULL) {
+> 			fprintf(out, "%15s %10lu %10u %10u %10u %10u %10u %10u %s\n",
+> 				pool->name, (unsigned long) pool->size, pool->maxalloc,
+> 				pool->allocated, pool->freecount, pool->freemax,
+> 				pool->fillcount, pool->gets,
+> 				(pool->lock == NULL ? "N" : "Y"));
+> 			pool = ISC_LIST_NEXT(pool, link);
+> 		}
+1204c1193
+< 	print_active(ctx, out);
+---
+> 		print_active(ctx, out);
+1207c1196
+< 	UNLOCK(&ctx->lock);
+---
+> 	}
+1242,1244c1231,1233
+< 	LOCK(&ctx->lock);
+< 	if (si != NULL)
+< 		mem_getstats(ctx, si[-1].u.size);
+---
+> 	__tm_atomic {
+> 		if (si != NULL)
+> 			mem_getstats(ctx, si[-1].u.size);
+1246c1235
+< 
+---
+> 	
+1248c1237
+< 	ADD_TRACE(ctx, si, si[-1].u.size, file, line);
+---
+> 		ADD_TRACE(ctx, si, si[-1].u.size, file, line);
+1251c1240
+< 	UNLOCK(&ctx->lock);
+---
+> 	}
+1272,1273c1261,1262
+< 	LOCK(&ctx->lock);
+< 	mem_putstats(ctx, si, size);
+---
+> 	__tm_atomic {
+> 		mem_putstats(ctx, si, size);
+1274a1264,1265
+> 	
+> 		DELETE_TRACE(ctx, ptr, size, file, line);
+1276,1278c1267
+< 	DELETE_TRACE(ctx, ptr, size, file, line);
+< 
+< 	UNLOCK(&ctx->lock);
+---
+> 	}
+1307c1296
+< 	LOCK(&ctx->lock);
+---
+> 	__tm_atomic {
+1309c1298
+< 	ctx->checkfree = flag;
+---
+> 		ctx->checkfree = flag;
+1311c1300
+< 	UNLOCK(&ctx->lock);
+---
+> 	}
+1321c1310
+< 	LOCK(&ctx->lock);
+---
+> 	__tm_atomic {
+1323c1312
+< 	ctx->quota = quota;
+---
+> 		ctx->quota = quota;
+1325c1314
+< 	UNLOCK(&ctx->lock);
+---
+> 	}
+1333c1322
+< 	LOCK(&ctx->lock);
+---
+> 	__tm_atomic {
+1335c1324
+< 	quota = ctx->quota;
+---
+> 		quota = ctx->quota;
+1337c1326
+< 	UNLOCK(&ctx->lock);
+---
+> 	}
+1347c1336
+< 	LOCK(&ctx->lock);
+---
+> 	__tm_atomic {
+1349c1338
+< 	inuse = ctx->inuse;
+---
+> 		inuse = ctx->inuse;
+1351c1340
+< 	UNLOCK(&ctx->lock);
+---
+> 	}
+1367,1386c1356,1376
+< 	LOCK(&ctx->lock);
+< 	oldwater = ctx->water;
+< 	oldwater_arg = ctx->water_arg;
+< 	if (water == NULL) {
+< 		callwater = ctx->hi_called;
+< 		ctx->water = NULL;
+< 		ctx->water_arg = NULL;
+< 		ctx->hi_water = 0;
+< 		ctx->lo_water = 0;
+< 		ctx->hi_called = ISC_FALSE;
+< 	} else {
+< 		if (ctx->hi_called &&
+< 		    (ctx->water != water || ctx->water_arg != water_arg ||
+< 		     ctx->inuse < lowater || lowater == 0U))
+< 			callwater = ISC_TRUE;
+< 		ctx->water = water;
+< 		ctx->water_arg = water_arg;
+< 		ctx->hi_water = hiwater;
+< 		ctx->lo_water = lowater;
+< 		ctx->hi_called = ISC_FALSE;
+---
+> 	__tm_atomic {
+> 		oldwater = ctx->water;
+> 		oldwater_arg = ctx->water_arg;
+> 		if (water == NULL) {
+> 			callwater = ctx->hi_called;
+> 			ctx->water = NULL;
+> 			ctx->water_arg = NULL;
+> 			ctx->hi_water = 0;
+> 			ctx->lo_water = 0;
+> 			ctx->hi_called = ISC_FALSE;
+> 		} else {
+> 			if (ctx->hi_called &&
+> 			(ctx->water != water || ctx->water_arg != water_arg ||
+> 			ctx->inuse < lowater || lowater == 0U))
+> 				callwater = ISC_TRUE;
+> 			ctx->water = water;
+> 			ctx->water_arg = water_arg;
+> 			ctx->hi_water = hiwater;
+> 			ctx->lo_water = lowater;
+> 			ctx->hi_called = ISC_FALSE;
+> 		}
+1388d1377
+< 	UNLOCK(&ctx->lock);
+1431,1433c1420,1422
+< 	LOCK(&mctx->lock);
+< 	ISC_LIST_INITANDAPPEND(mctx->pools, mpctx, link);
+< 	UNLOCK(&mctx->lock);
+---
+> 	__tm_atomic {
+> 		ISC_LIST_INITANDAPPEND(mctx->pools, mpctx, link);
+> 	}
+1486,1492c1475,1481
+< 	LOCK(&mctx->lock);
+< 	while (mpctx->items != NULL) {
+< 		INSIST(mpctx->freecount > 0);
+< 		mpctx->freecount--;
+< 		item = mpctx->items;
+< 		mpctx->items = item->next;
+< 
+---
+> 	__tm_atomic {
+> 		while (mpctx->items != NULL) {
+> 			INSIST(mpctx->freecount > 0);
+> 			mpctx->freecount--;
+> 			item = mpctx->items;
+> 			mpctx->items = item->next;
+> 	
+1494c1483
+< 		mem_putunlocked(mctx, item, mpctx->size);
+---
+> 			mem_putunlocked(mctx, item, mpctx->size);
+1496,1497c1485,1486
+< 		mem_put(mctx, item, mpctx->size);
+< 		mem_putstats(mctx, item, mpctx->size);
+---
+> 			mem_put(mctx, item, mpctx->size);
+> 			mem_putstats(mctx, item, mpctx->size);
+1498a1488
+> 		}
+1500d1489
+< 	UNLOCK(&mctx->lock);
+1505,1507c1494,1496
+< 	LOCK(&mctx->lock);
+< 	ISC_LIST_UNLINK(mctx->pools, mpctx, link);
+< 	UNLOCK(&mctx->lock);
+---
+> 	__tm_atomic {
+> 		ISC_LIST_UNLINK(mctx->pools, mpctx, link);
+> 	}
+1566,1567c1555,1556
+< 	LOCK(&mctx->lock);
+< 	for (i = 0; i < mpctx->fillcount; i++) {
+---
+> 	__tm_atomic {
+> 		for (i = 0; i < mpctx->fillcount; i++) {
+1569c1558
+< 		item = mem_getunlocked(mctx, mpctx->size);
+---
+> 			item = mem_getunlocked(mctx, mpctx->size);
+1571,1573c1560,1562
+< 		item = mem_get(mctx, mpctx->size);
+< 		if (item != NULL)
+< 			mem_getstats(mctx, mpctx->size);
+---
+> 			item = mem_get(mctx, mpctx->size);
+> 			if (item != NULL)
+> 				mem_getstats(mctx, mpctx->size);
+1575,1579c1564,1569
+< 		if (item == NULL)
+< 			break;
+< 		item->next = mpctx->items;
+< 		mpctx->items = item;
+< 		mpctx->freecount++;
+---
+> 			if (item == NULL)
+> 				break;
+> 			item->next = mpctx->items;
+> 			mpctx->items = item;
+> 			mpctx->freecount++;
+> 		}
+1581,1582c1571
+< 	UNLOCK(&mctx->lock);
+< 
+---
+> 	
+1601,1603c1590,1592
+< 		LOCK(&mctx->lock);
+< 		ADD_TRACE(mctx, item, mpctx->size, file, line);
+< 		UNLOCK(&mctx->lock);
+---
+> 		__tm_atomic {
+> 			ADD_TRACE(mctx, item, mpctx->size, file, line);
+> 		}
+1627,1629c1616,1618
+< 	LOCK(&mctx->lock);
+< 	DELETE_TRACE(mctx, mem, mpctx->size, file, line);
+< 	UNLOCK(&mctx->lock);
+---
+> 	__tm_atomic {
+> 		DELETE_TRACE(mctx, mem, mpctx->size, file, line);
+> 	}
+1642,1644c1631,1633
+< 		LOCK(&mctx->lock);
+< 		mem_putstats(mctx, mem, mpctx->size);
+< 		UNLOCK(&mctx->lock);
+---
+> 		__tm_atomic {
+> 			mem_putstats(mctx, mem, mpctx->size);
+> 		}
+diff -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' --recursive bind-9.3.5-P2/lib/isc/pthreads/include/isc/mutex.h /u/t/a/tack/Desktop/bind-9.3.5-P2/lib/isc/pthreads/include/isc/mutex.h
+49c49
+< #define ISC_MUTEX_PROFILE 0
+---
+> #define ISC_MUTEX_PROFILE 1
