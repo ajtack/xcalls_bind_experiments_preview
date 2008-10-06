@@ -14,9 +14,12 @@ PATCHES_DIRECTORY = patches
 default_target: experiments
 
 .PHONY: experiments
-experiments:
+experiments: named.conf
 	@echo "Running Experiments..."
 	ruby run.rb $(BIND_DIRECTORY) experiments patches
+
+named.conf: build_named.conf.rb
+	ruby $< > $@
 
 $(BIND_DIRECTORY).tar.gz:
 	@echo "Downloading $@"
@@ -30,13 +33,13 @@ $(BIND_DIRECTORY)/Makefile: $(BIND_DIRECTORY)
 	@echo "Configuring BIND..."
 	@cd $(BIND_DIRECTORY) && \
 	export CC=$(CC) && \
-	export CFLAGS="$(CFLAGS)" && \
 	./configure $(CONFIGURE_OPTIONS)
 
 .PHONY: build_named
 build_named: $(BIND_DIRECTORY)/Makefile
 	@echo "Building BIND..."
-	@make -s -C $(BIND_DIRECTORY)
+	@export CFLAGS="$(CFLAGS)" && \
+	 make -s -C $(BIND_DIRECTORY)
 	@echo "Building QueryPerf..."
 	@cd $(BIND_DIRECTORY)/contrib/queryperf && ./configure
 	@make -s -C $(BIND_DIRECTORY)/contrib/queryperf

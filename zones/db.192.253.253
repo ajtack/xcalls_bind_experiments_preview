@@ -1,0 +1,20 @@
+$TTL 3h
+253.253.192.in-addr.arpa. IN SOA toystory.movie.edu. al.movie.edu. (
+                          1        ; Serial
+                          3h       ; Refresh after 3 hours
+                          1h       ; Retry after 1 hour
+                          1w       ; Expire after 1 week
+                          1h )     ; Negative caching TTL of 1 hour
+;
+; Name servers
+;
+253.253.192.in-addr.arpa.  IN NS  toystory.movie.edu.
+253.253.192.in-addr.arpa.  IN NS  wormhole.movie.edu.
+
+;
+; Addresses point to canonical name
+;
+1.253.253.192.in-addr.arpa.  IN PTR wormhole.movie.edu.
+2.253.253.192.in-addr.arpa.  IN PTR misery.movie.edu.
+3.253.253.192.in-addr.arpa.  IN PTR shining.movie.edu.
+4.253.253.192.in-addr.arpa.  IN PTR carrie.movie.edu.
