@@ -30,11 +30,7 @@ Dir.open(PatchesDir) do |PatchDir|
 
 		# Restore vanilla BIND
 		system("make restore")
-		
-		puts "Applying patch #{patchName}"
-		IO.popen("patch -p2 -d #{BindDir}", mode="r+") do |patchStdio|
-			patchStdio.write(IO.read(PatchesDir + '/' + patchName))
-		end
+		system("patch -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
 
 		if system("make -s build_named")
 			Dir.open(ExperimentsDir) do |experimentDir|
@@ -47,9 +43,10 @@ Dir.open(PatchesDir) do |PatchDir|
 				end
 				experiments.compact!
 
+				puts "Running against patch #{patchName} ..."
 				experiments.each do |experimentName|
 					experimentName = ExperimentsDir + '/' + experimentName
-					IO.popen("ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 30") do |experimentOutput|
+					IO.popen("ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 10") do |experimentOutput|
 						results[patchName][experimentName] = experimentOutput.read.to_i
 					end
 				end

@@ -5,8 +5,8 @@
 #
 
 CC = icc
-CFLAGS = -DISC_MUTEX_PROFILE=1
-CONFIGURE_OPTIONS = --enable-threads
+CFLAGS = -DISC_MUTEX_PROFILE=1 -Qtm_enabled
+CONFIGURE_OPTIONS = --enable-threads --with-openssl=no
 BIND_DIRECTORY = bind-9.3.5-P2
 PATCHES_DIRECTORY = patches
 
@@ -28,24 +28,22 @@ $(BIND_DIRECTORY).tar.gz:
 $(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz
 	@echo "Unarchiving Vanilla BIND..."
 	@tar xzf $<
-
-$(BIND_DIRECTORY)/Makefile: $(BIND_DIRECTORY)
 	@echo "Configuring BIND..."
 	@cd $(BIND_DIRECTORY) && \
+	export CFLAGS="$(CFLAGS)" && \
 	export CC=$(CC) && \
 	./configure $(CONFIGURE_OPTIONS)
 
 .PHONY: build_named
-build_named: $(BIND_DIRECTORY)/Makefile
+build_named: $(BIND_DIRECTORY)
 	@echo "Building BIND..."
-	@export CFLAGS="$(CFLAGS)" && \
-	 make -s -C $(BIND_DIRECTORY)
+	@make -s -C $(BIND_DIRECTORY)
 	@echo "Building QueryPerf..."
 	@cd $(BIND_DIRECTORY)/contrib/queryperf && ./configure
 	@make -s -C $(BIND_DIRECTORY)/contrib/queryperf
 
 .PHONY: restore
-restore: clear $(BIND_DIRECTORY)/Makefile
+restore: clear $(BIND_DIRECTORY)
 
 .PHONY: clean
 clean:
@@ -54,7 +52,6 @@ clean:
 .PHONY: clear
 clear:
 	@rm -Rf $(BIND_DIRECTORY)
-	@rm -f $(BIND_DIRECTORY).tar.gz
 
 .PHONY: patch
 patch: make_patch.rb $(BIND_DIRECTORY) clean

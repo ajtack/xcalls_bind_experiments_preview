@@ -14,25 +14,19 @@ Port            = ARGV[2].to_i
 Configuration   = ARGV[3]
 Repetitions     = ARGV[4].to_i
 
-childPid = Kernel.fork
-if childPid.nil?
-	# We are the child.
-	# Start BIND.
-	exec("#{BindRoot}/bin/named/named -p #{Port} -c #{Configuration} -f")
-else
-	# We are the parent
-	# Run experiment
-	totalQps = 0
-	Repetitions.times do |repNumber|
-		IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
-		         "-p #{Port} -d #{ExperimentsRoot}/queries.dat")                do |result|
-			totalQps += result.readlines[-2].split[3].to_i
-			# puts result.readlines[-2].split[3].to_i
-		end
-	end
 
-	# Kill BIND
-	Process.kill(3, childPid)
-	puts totalQps / Repetitions
+# Start BIND.
+process = IO.popen("#{BindRoot}/bin/named/named -f -g -p #{Port} -c #{Configuration}")
+
+# Run experiment
+totalQps = 0
+Repetitions.times do |repNumber|
+	IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
+	         "-p #{Port} -d #{ExperimentsRoot}/queries.dat")                do |result|
+		totalQps += result.readlines[-2].split[3].to_i
+	end
 end
 
+# Kill BIND
+Process.kill(3, process.pid)
+puts totalQps / Repetitions

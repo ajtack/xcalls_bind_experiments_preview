@@ -22,7 +22,7 @@ end
 
 system("make -C #{comparedDirectory} clean")
 system("rm -f #{PatchesDirectory}/#{patchName}")
-diffResult = system("diff -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' --recursive #{VanillaDirectory} #{comparedDirectory} > #{PatchesDirectory}/#{patchName}")
+diffResult = system("diff -Naur -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' #{VanillaDirectory} #{comparedDirectory} > #{PatchesDirectory}/#{patchName}")
 
 puts diffResult
 exit 0
