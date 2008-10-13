@@ -24,15 +24,16 @@ Dir.open(PatchesDir) do |PatchDir|
 	end
 	patches.compact!
 
+	# Restore vanilla BIND, run patches.
+	system("make restore")
 	results = Hash.new
 	patches.each do |patchName|
 		results[patchName] = Hash.new
-
-		# Restore vanilla BIND
-		system("make restore")
+		
+		# Apply patch
 		system("patch -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
 
-		if system("make -s build_named")
+		if system("make build_named")
 			Dir.open(ExperimentsDir) do |experimentDir|
 				experiments = experimentDir.collect do |fileName|
 					if fileName.split('.')[-2] == 'experiment'
@@ -54,6 +55,8 @@ Dir.open(PatchesDir) do |PatchDir|
 		else
 			raise "make failed with error #{$?}!"
 		end
+		
+		system("patch --reverse -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
 	end
 
 	results.each do |patchName, experiments|
