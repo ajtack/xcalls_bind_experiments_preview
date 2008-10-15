@@ -5,7 +5,7 @@
 #
 
 CC = icc
-CFLAGS = -DISC_MUTEX_PROFILE=1 -Qtm_enabled -ipo -no-gcc
+CFLAGS = -Qtm_enabled
 CONFIGURE_OPTIONS = --enable-threads --with-openssl=no
 BIND_DIRECTORY = bind-9.3.5-P2
 PATCHES_DIRECTORY = patches

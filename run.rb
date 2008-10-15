@@ -48,7 +48,7 @@ Dir.open(PatchesDir) do |PatchDir|
 				experiments.each do |experimentName|
 					experimentName = ExperimentsDir + '/' + experimentName
 					IO.popen("ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 10") do |experimentOutput|
-						results[patchName][experimentName] = experimentOutput.read.to_i
+						results[patchName][experimentName] = experimentOutput.read
 					end
 				end
 			end
@@ -62,7 +62,7 @@ Dir.open(PatchesDir) do |PatchDir|
 	results.each do |patchName, experiments|
 		puts "Results for #{patchName}:"
 		experiments.each do |experimentName, result|
-			printf("\t%30s\t%10f\n", experimentName, result+ 0.5)
+			printf("\t%30s\t%10f\n", experimentName, result)
 		end
 	end
 end
