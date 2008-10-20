@@ -36,7 +36,7 @@ Dir.open(PatchesDir) do |PatchDir|
 		if system("make build_named")
 			Dir.open(ExperimentsDir) do |experimentDir|
 				experiments = experimentDir.collect do |fileName|
-					if fileName =~ /.+\.experiment\.rb/ and not fileName[0] == '.'
+					if fileName =~ /.+\.experiment\.rb/ and not fileName[0,1] == '.'
 						fileName
 					else
 						nil

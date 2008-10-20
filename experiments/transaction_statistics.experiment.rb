@@ -4,6 +4,8 @@
 # each run.
 #
 # Arguments:
+require File.dirname(__FILE__) + '/../utilities/bind'
+
 BindRoot        =	if ARGV[0][-1..-1] == '/'
                   then ARGV[0][0..-2]
                   else ARGV[0] end
@@ -40,6 +42,8 @@ class TransactionStatistics
 			else
 				@retries.push(0)
 			end
+		else
+			raise "Tried to record nil results!"
 		end
 	end
 	
@@ -89,39 +93,47 @@ end
 # Run experiment
 stats = TransactionStatistics.new
 Repetitions.times do |repNumber|
-	# Start BIND.
-	process = IO.popen("export ITM_STATISTICS=simple;" +
-		"#{BindRoot}/bin/named/named -f -g -p #{Port} -c #{Configuration}")
-	sleep(0.25)
-	
-	# Run query set
-	if not system("#{BindRoot}/contrib/queryperf/queryperf " +
-	         "-p #{Port} -d #{ExperimentsRoot}/queries.dat -q 400")
-		raise "Could not run queryperf!"
-	end
-	
-	# Kill BIND (produces statistics)
-	puts "KILLING #{process.pid}"
-	system("killall named")
-	sleep(0.25)
-	
-	# Read statistics
-	logFile = File.open("zones/itm.log", "r")
-	line = logFile.readlines
-	
-	thisEntry = Hash.new
-	line.count.downto 0 do |lineNumber|
-		thisLine = line[lineNumber - 1]
-		piece = thisLine.split
-		
-		if piece[0] == ':'  # line below "GRAND TOTAL ..."
-			break
+	IO.popen("-", "r+") do |pipe|
+		if pipe.nil?
+			startBind do |bindIn, bindOut, bindErr|
+				$stdout.puts "Started BIND!"
+
+				# BIND will be ended by an interrupt signal from the parent:
+				# Note race condition here!
+				trap('INT')	{}
+			end
 		else
-			thisEntry.merge!(pieceHash(piece))
+			# Wait for the other thread to get BIND ready
+			$stderr.puts pipe.gets
+
+			# Run queryperf against BIND!
+			IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
+			         "-p #{Port} -q 400 -d #{ExperimentsRoot}/queries.dat", "r") do |queryperfStdio|
+				$stderr.puts "Started queryperf!"
+				$stderr.puts "Waiting for queryperf to finish..."
+			end
+
+			killBind
+
+			# Read statistics
+			logFile = File.open("zones/itm.log", "r")
+			line = logFile.readlines
+
+			thisEntry = Hash.new
+			line.count.downto 0 do |lineNumber|
+				thisLine = line[lineNumber - 1]
+				piece = thisLine.split
+
+				if piece[0] == ':'  # line below "GRAND TOTAL ..."
+					break
+				else
+					thisEntry.merge!(pieceHash(piece))
+				end
+			end
+
+			stats.record(thisEntry)
 		end
 	end
-	
-	stats.record(thisEntry)
 end
 
 puts "#{stats.average[:transactions]} transactions, " +

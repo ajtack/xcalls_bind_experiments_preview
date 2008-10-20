@@ -6,13 +6,8 @@ options {
 	pid-file "named.pid";
 };
 
-zone "example.com." in {
+zone "." in {
 	type master;
 	file "db.example.com";
-}
-
-zone "." in {
-	type hint;
-	file "db.cache";
 };
 EOF

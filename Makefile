@@ -23,10 +23,15 @@ $(EXPERIMENTS_DIRECTORY)/queries.dat: named.conf build_named
 	curl http://www.mit.edu/people/cdemello/univ-full.html | \
 		ruby utilities/scrape_domains.rb | \
 		ruby utilities/clean_domains.rb $(BIND_DIRECTORY) $(EXPERIMENTS_DIRECTORY) 3000 named.conf | \
-		ruby utilities/generate_query_set.rb 20000 > \
+		ruby utilities/generate_query_set.rb 100000 > \
 		$@
 
-named.conf: utilities/build_named.conf.rb
+zones/db.example.com: utilities/generate_example_zone.rb
+	curl http://www.mit.edu/people/cdemello/univ-full.html | \
+		ruby utilities/scrape_domains.rb | \
+		ruby utilities/generate_example_zone.rb > $@
+
+named.conf: utilities/build_named.conf.rb zones/db.example.com
 	ruby $< > $@
 
 $(BIND_DIRECTORY).tar.gz:
@@ -64,6 +69,10 @@ clean: empty_cores
 .PHONY: clear
 clear: empty_cores
 	rm -Rf $(BIND_DIRECTORY)
+	rm -f $(BIND_DIRECTORY).tar.gz
+	rm -f zones/itm.log
+	rm -f named.conf
+	rm -f $(EXPERIMENTS_DIRECTORY)/queries.dat
 
 .PHONY: patch
 patch: make_patch.rb $(BIND_DIRECTORY) clean

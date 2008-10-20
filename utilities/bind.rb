@@ -1,3 +1,5 @@
+require 'open3'
+
 def startBind
 	Open3.popen3("#{BindRoot}/bin/named/named -f -g -p #{Port} -c #{Configuration}") do |bindIn, bindOut, bindErr|
 		while output = bindErr.gets and not output =~ /running/
