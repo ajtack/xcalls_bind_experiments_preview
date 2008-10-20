@@ -101,6 +101,7 @@ Repetitions.times do |repNumber|
 				# BIND will be ended by an interrupt signal from the parent:
 				# Note race condition here!
 				trap('INT')	{}
+				puts "Bind Terminated!"
 			end
 		else
 			# Wait for the other thread to get BIND ready
@@ -113,11 +114,17 @@ Repetitions.times do |repNumber|
 				$stderr.puts "Waiting for queryperf to finish..."
 			end
 
+			# Kill BIND and synchronize such that itm.log has been created.
 			killBind
+			$stderr.puts pipe.gets
 
 			# Read statistics
+			until File.exist?("zones/itm.log")
+				sleep(0.5)
+			end
 			logFile = File.open("zones/itm.log", "r")
 			line = logFile.readlines
+			File.delete("zones/itm.log")
 
 			thisEntry = Hash.new
 			line.count.downto 0 do |lineNumber|

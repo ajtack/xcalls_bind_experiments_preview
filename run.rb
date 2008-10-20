@@ -62,7 +62,7 @@ Dir.open(PatchesDir) do |PatchDir|
 	results.each do |patchName, experiments|
 		puts "Results for #{patchName}:"
 		experiments.each do |experimentName, result|
-			printf("\t%30s\t%s\n", experimentName, result)
+			printf("\t%30s\t%s\n", experimentName.match(/#{ExperimentsDir}\/(.+)/)[1], result.strip)
 		end
 	end
 end

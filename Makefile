@@ -15,67 +15,70 @@ EXPERIMENTS_DIRECTORY = experiments
 default_target: experiments
 
 .PHONY: experiments
-experiments: named.conf experiments/queries.dat
+experiments: named.conf $(EXPERIMENTS_DIRECTORY)/queries.dat
 	@echo "Running Experiments..."
-	ruby run.rb $(BIND_DIRECTORY) $(EXPERIMENTS_DIRECTORY) $(PATCHES_DIRECTORY)
+	@ruby run.rb $(BIND_DIRECTORY) $(EXPERIMENTS_DIRECTORY) $(PATCHES_DIRECTORY)
 
 $(EXPERIMENTS_DIRECTORY)/queries.dat: named.conf build_named
-	curl http://www.mit.edu/people/cdemello/univ-full.html | \
+	@echo "Generating query set ..."
+	@curl -s http://www.mit.edu/people/cdemello/univ-full.html | \
 		ruby utilities/scrape_domains.rb | \
 		ruby utilities/clean_domains.rb $(BIND_DIRECTORY) $(EXPERIMENTS_DIRECTORY) 3000 named.conf | \
 		ruby utilities/generate_query_set.rb 100000 > \
 		$@
 
 zones/db.example.com: utilities/generate_example_zone.rb
-	curl http://www.mit.edu/people/cdemello/univ-full.html | \
+	@echo "Generating a local authoritative zone ..."
+	@curl -s http://www.mit.edu/people/cdemello/univ-full.html | \
 		ruby utilities/scrape_domains.rb | \
 		ruby utilities/generate_example_zone.rb > $@
 
 named.conf: utilities/build_named.conf.rb zones/db.example.com
-	ruby $< > $@
+	@echo "Generating a configuration for BIND ..."
+	@ruby $< > $@
 
 $(BIND_DIRECTORY).tar.gz:
 	@echo "Downloading $@"
-	curl http://ftp.isc.org/isc/bind9/9.3.5-P2/bind-9.3.5-P2.tar.gz > $@
+	@curl -s http://ftp.isc.org/isc/bind9/9.3.5-P2/bind-9.3.5-P2.tar.gz > $@
 
 $(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz
 	@echo "Unarchiving Vanilla BIND..."
-	tar xzf $<
+	@tar xzf $<
 	@echo "Configuring BIND..."
-	cd $(BIND_DIRECTORY) && \
-	export CFLAGS="$(CFLAGS)" && \
-	export CC=$(CC) && \
-	./configure $(CONFIGURE_OPTIONS)
+	@cd $(BIND_DIRECTORY) && \
+		export CFLAGS="$(CFLAGS)" && \
+		export CC=$(CC) && \
+		./configure $(CONFIGURE_OPTIONS) > /dev/null
 
 .PHONY: build_named
-build_named: $(BIND_DIRECTORY)
+build_named: $(BIND_DIRECTORY) named.conf zones/db.example.com
 	@echo "Building BIND..."
-	make -C $(BIND_DIRECTORY)
+	@make -s -C $(BIND_DIRECTORY)
 	@echo "Building QueryPerf..."
-	cd $(BIND_DIRECTORY)/contrib/queryperf && ./configure
-	make -C $(BIND_DIRECTORY)/contrib/queryperf
+	@cd $(BIND_DIRECTORY)/contrib/queryperf && ./configure > /dev/null
+	@make -s -C $(BIND_DIRECTORY)/contrib/queryperf
 
 .PHONY: restore
-restore: clear $(BIND_DIRECTORY)
+restore: clean build_named
 
 .PHONY: empty_cores
 empty_cores:
-	rm -Rf zones/core.*
+	@rm -Rf zones/core.*
 
 .PHONY: clean
 clean: empty_cores
-	make -C $(BIND_DIRECTORY) clean
+	@rm -f zones/itm.log
+	@rm -Rf $(BIND_DIRECTORY)
+	@rm -f $(BIND_DIRECTORY).tar.gz
 
 .PHONY: clear
-clear: empty_cores
-	rm -Rf $(BIND_DIRECTORY)
-	rm -f $(BIND_DIRECTORY).tar.gz
-	rm -f zones/itm.log
-	rm -f named.conf
-	rm -f $(EXPERIMENTS_DIRECTORY)/queries.dat
+clear: clean empty_cores
+	@rm -f named.conf
+	@rm -f $(EXPERIMENTS_DIRECTORY)/queries.dat
+	@rm -f zones/db.example.com
 
 .PHONY: patch
 patch: make_patch.rb $(BIND_DIRECTORY) clean
-	ruby $< '$(BIND_DIRECTORY)' '$(PATCHES_DIRECTORY)'
+	@ruby $< '$(BIND_DIRECTORY)' '$(PATCHES_DIRECTORY)'
 	@echo "Patch Creation Successful!"
 
