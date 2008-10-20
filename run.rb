@@ -36,7 +36,7 @@ Dir.open(PatchesDir) do |PatchDir|
 		if system("make build_named")
 			Dir.open(ExperimentsDir) do |experimentDir|
 				experiments = experimentDir.collect do |fileName|
-					if fileName.split('.')[-2] == 'experiment'
+					if fileName =~ /.+\.experiment\.rb/ and not fileName[0] == '.'
 						fileName
 					else
 						nil
@@ -47,7 +47,7 @@ Dir.open(PatchesDir) do |PatchDir|
 				puts "Running against patch #{patchName} ..."
 				experiments.each do |experimentName|
 					experimentName = ExperimentsDir + '/' + experimentName
-					IO.popen("ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 10") do |experimentOutput|
+					IO.popen("ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 1") do |experimentOutput|
 						results[patchName][experimentName] = experimentOutput.read
 					end
 				end
@@ -62,7 +62,7 @@ Dir.open(PatchesDir) do |PatchDir|
 	results.each do |patchName, experiments|
 		puts "Results for #{patchName}:"
 		experiments.each do |experimentName, result|
-			printf("\t%30s\t%10f\n", experimentName, result)
+			printf("\t%30s\t%s\n", experimentName, result)
 		end
 	end
 end

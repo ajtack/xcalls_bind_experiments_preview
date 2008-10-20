@@ -9,6 +9,7 @@ CFLAGS = -Qtm_enabled
 CONFIGURE_OPTIONS = --enable-threads --with-openssl=no
 BIND_DIRECTORY = bind-9.3.5-P2
 PATCHES_DIRECTORY = patches
+EXPERIMENTS_DIRECTORY = experiments
 
 .PHONY: default_target
 default_target: experiments
@@ -16,12 +17,16 @@ default_target: experiments
 .PHONY: experiments
 experiments: named.conf experiments/queries.dat
 	@echo "Running Experiments..."
-	ruby run.rb $(BIND_DIRECTORY) experiments patches
+	ruby run.rb $(BIND_DIRECTORY) $(EXPERIMENTS_DIRECTORY) $(PATCHES_DIRECTORY)
 
-experiments/queries.dat:
-	ruby experiments/generate_query_set.rb 20000 > $@
+$(EXPERIMENTS_DIRECTORY)/queries.dat: named.conf build_named
+	curl http://www.mit.edu/people/cdemello/univ-full.html | \
+		ruby utilities/scrape_domains.rb | \
+		ruby utilities/clean_domains.rb $(BIND_DIRECTORY) $(EXPERIMENTS_DIRECTORY) 3000 named.conf | \
+		ruby utilities/generate_query_set.rb 20000 > \
+		$@
 
-named.conf: build_named.conf.rb
+named.conf: utilities/build_named.conf.rb
 	ruby $< > $@
 
 $(BIND_DIRECTORY).tar.gz:
@@ -48,12 +53,16 @@ build_named: $(BIND_DIRECTORY)
 .PHONY: restore
 restore: clear $(BIND_DIRECTORY)
 
+.PHONY: empty_cores
+empty_cores:
+	rm -Rf zones/core.*
+
 .PHONY: clean
-clean:
+clean: empty_cores
 	make -C $(BIND_DIRECTORY) clean
 
 .PHONY: clear
-clear:
+clear: empty_cores
 	rm -Rf $(BIND_DIRECTORY)
 
 .PHONY: patch

@@ -4,6 +4,8 @@
 # each run.
 #
 # Arguments:
+require File.dirname(__FILE__) + '/../utilities/bind'
+
 BindRoot        =	if ARGV[0][-1..-1] == '/'
                   then ARGV[0][0..-2]
                   else ARGV[0] end
@@ -22,11 +24,11 @@ process = IO.popen("#{BindRoot}/bin/named/named -f -g -p #{Port} -c #{Configurat
 totalQps = 0
 Repetitions.times do |repNumber|
 	IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
-	         "-p #{Port} -d #{ExperimentsRoot}/queries.dat")                do |result|
+	         "-p #{Port} -d #{ExperimentsRoot}/queries.dat -q 400")                do |result|
 		totalQps += result.readlines[-2].split[3].to_i
 	end
 end
 
 # Kill BIND
-Process.kill(3, process.pid)
+killBind
 puts totalQps / Repetitions
