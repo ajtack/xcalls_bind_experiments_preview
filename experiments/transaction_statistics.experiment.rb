@@ -15,6 +15,7 @@ ExperimentsRoot = if ARGV[1][-1..-1] == '/'
 Port            = ARGV[2].to_i
 Configuration   = ARGV[3]
 Repetitions     = ARGV[4].to_i
+Logged          = (ARGV[5] == '--logged')
 
 class TransactionStatistics
  	attr_reader :transactions
@@ -93,10 +94,11 @@ end
 # Run experiment
 stats = TransactionStatistics.new
 Repetitions.times do |repNumber|
+	$stderr.puts "Running transaction-statistic measurement exercise #{repNumber} ..."
 	IO.popen("-", "r+") do |pipe|
 		if pipe.nil?
-			startBind do |bindIn, bindOut, bindErr|
-				$stdout.puts "Started BIND!"
+			startBind(Logged) do |bindIn, bindOut, bindErr|
+				$stderr.puts "Started BIND!"
 
 				# BIND will be ended by an interrupt signal from the parent:
 				# Note race condition here!

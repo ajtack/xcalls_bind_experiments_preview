@@ -15,20 +15,33 @@ ExperimentsRoot = if ARGV[1][-1..-1] == '/'
 Port            = ARGV[2].to_i
 Configuration   = ARGV[3]
 Repetitions     = ARGV[4].to_i
+Logged          = (ARGV[5] == '--logged')
 
 
-# Start BIND.
-process = IO.popen("#{BindRoot}/bin/named/named -f -g -p #{Port} -c #{Configuration}")
-
-# Run experiment
-totalQps = 0
-Repetitions.times do |repNumber|
-	IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
-	         "-p #{Port} -d #{ExperimentsRoot}/queries.dat -q 400")                do |result|
-		totalQps += result.readlines[-2].split[3].to_i
+IO.popen('-') do |pipe|
+	if pipe.nil?
+		startBind(Logged) do |bindIn, bindOut, bindErr|
+			puts "Started BIND!"
+			
+			trap('INT') {}
+			puts "BIND has been killed."
+		end
+	else
+		#Wait for BIND to start
+		$stderr.puts pipe.gets
+		
+		# Run experiment
+		totalQps = 0
+		Repetitions.times do |repNumber|
+			IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
+			         "-p #{Port} -d #{ExperimentsRoot}/queries.dat -q 400")                do |result|
+				$stderr.puts "Running Queryperf excercise #{repNumber} ..."
+				totalQps += result.readlines[-2].split[3].to_i
+			end
+		end
+		
+		killBind
+		$stderr.puts pipe.gets
+		puts "#{totalQps / Repetitions} queries per second\"
 	end
 end
-
-# Kill BIND
-killBind
-puts totalQps / Repetitions

@@ -16,7 +16,7 @@ PatchesDir     = if ARGV[2][-1..-1] == '/'
 
 Dir.open(PatchesDir) do |PatchDir|
 	patches = PatchDir.collect do |fileName|
-		if fileName.split('.').last == 'patch'
+		if fileName.split('.').last == 'patch' and not fileName[0,1] == '.'
 			fileName
 		else
 			nil
@@ -25,15 +25,19 @@ Dir.open(PatchesDir) do |PatchDir|
 	patches.compact!
 
 	# Restore vanilla BIND, run patches.
-	system("make restore")
+	system("make --no-print-directory restore")
 	results = Hash.new
+	lastPatchWasLogged = false
 	patches.each do |patchName|
 		results[patchName] = Hash.new
+
+		buildCommand = 'make -s --no-print-directory build_named'
+		isLoggedPatch = (patchName =~ /.+\.logged\.patch/)
 		
 		# Apply patch
 		system("patch -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
 
-		if system("make build_named")
+		if system(buildCommand)
 			Dir.open(ExperimentsDir) do |experimentDir|
 				experiments = experimentDir.collect do |fileName|
 					if fileName =~ /.+\.experiment\.rb/ and not fileName[0,1] == '.'
@@ -47,7 +51,11 @@ Dir.open(PatchesDir) do |PatchDir|
 				puts "Running against patch #{patchName} ..."
 				experiments.each do |experimentName|
 					experimentName = ExperimentsDir + '/' + experimentName
-					IO.popen("ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 1") do |experimentOutput|
+					experimentCommand = "ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 1"
+					if isLoggedPatch
+						experimentCommand += ' --logged'
+					end
+					IO.popen(experimentCommand) do |experimentOutput|
 						results[patchName][experimentName] = experimentOutput.read
 					end
 				end
@@ -59,11 +67,10 @@ Dir.open(PatchesDir) do |PatchDir|
 		system("patch --reverse -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
 	end
 
-	results.each do |patchName, experiments|
-		puts "Results for #{patchName}:"
-		experiments.each do |experimentName, result|
-			printf("\t%30s\t%s\n", experimentName.match(/#{ExperimentsDir}\/(.+)/)[1], result.strip)
+	results.sort.each do |pair|
+		puts "Results for #{pair[0]}:"
+		pair[1].each do |experimentName, result|
+			printf("\t%30s\t%s\n", experimentName.match(/#{ExperimentsDir}\/(.+)\.experiment\.rb/)[1], result.strip)
 		end
 	end
 end
-

@@ -5,7 +5,7 @@
 #
 
 CC = icc
-CFLAGS = -Qtm_enabled
+CFLAGS += -Qtm_enabled
 CONFIGURE_OPTIONS = --enable-threads --with-openssl=no
 BIND_DIRECTORY = bind-9.3.5-P2
 PATCHES_DIRECTORY = patches
@@ -16,14 +16,13 @@ default_target: experiments
 
 .PHONY: experiments
 experiments: named.conf $(EXPERIMENTS_DIRECTORY)/queries.dat
-	@echo "Running Experiments..."
+	@echo "Running Experiments ..."
 	@ruby run.rb $(BIND_DIRECTORY) $(EXPERIMENTS_DIRECTORY) $(PATCHES_DIRECTORY)
 
-$(EXPERIMENTS_DIRECTORY)/queries.dat: named.conf build_named
+$(EXPERIMENTS_DIRECTORY)/queries.dat: named.conf
 	@echo "Generating query set ..."
 	@curl -s http://www.mit.edu/people/cdemello/univ-full.html | \
 		ruby utilities/scrape_domains.rb | \
-		ruby utilities/clean_domains.rb $(BIND_DIRECTORY) $(EXPERIMENTS_DIRECTORY) 3000 named.conf | \
 		ruby utilities/generate_query_set.rb 100000 > \
 		$@
 
@@ -35,16 +34,16 @@ zones/db.example.com: utilities/generate_example_zone.rb
 
 named.conf: utilities/build_named.conf.rb zones/db.example.com
 	@echo "Generating a configuration for BIND ..."
-	@ruby $< > $@
+	@ruby $< --logging > $@
 
 $(BIND_DIRECTORY).tar.gz:
-	@echo "Downloading $@"
+	@echo "Downloading $@ ..."
 	@curl -s http://ftp.isc.org/isc/bind9/9.3.5-P2/bind-9.3.5-P2.tar.gz > $@
 
 $(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz
-	@echo "Unarchiving Vanilla BIND..."
+	@echo "Unarchiving Vanilla BIND ..."
 	@tar xzf $<
-	@echo "Configuring BIND..."
+	@echo "Configuring BIND ..."
 	@cd $(BIND_DIRECTORY) && \
 		export CFLAGS="$(CFLAGS)" && \
 		export CC=$(CC) && \
@@ -56,26 +55,27 @@ build_named: $(BIND_DIRECTORY) named.conf zones/db.example.com
 	@make -s -C $(BIND_DIRECTORY)
 	@echo "Building QueryPerf..."
 	@cd $(BIND_DIRECTORY)/contrib/queryperf && ./configure > /dev/null
-	@make -s -C $(BIND_DIRECTORY)/contrib/queryperf
+	@make -s --no-print-directory -C $(BIND_DIRECTORY)/contrib/queryperf
 
 .PHONY: restore
-restore: clean build_named
+restore: clear build_named
 
 .PHONY: empty_cores
 empty_cores:
 	@rm -Rf zones/core.*
 
 .PHONY: clean
-clean: empty_cores
+clean: clear empty_cores
 	@rm -f zones/itm.log
-	@rm -Rf $(BIND_DIRECTORY)
-	@rm -f $(BIND_DIRECTORY).tar.gz
-
-.PHONY: clear
-clear: clean empty_cores
-	@rm -f named.conf
+	@rm -f zones/bind.log*
 	@rm -f $(EXPERIMENTS_DIRECTORY)/queries.dat
 	@rm -f zones/db.example.com
+	@rm -f named.conf
+
+.PHONY: clear
+clear: empty_cores
+	@rm -Rf $(BIND_DIRECTORY)
+	@rm -f $(BIND_DIRECTORY).tar.gz
 
 .PHONY: patch
 patch: make_patch.rb $(BIND_DIRECTORY) clean

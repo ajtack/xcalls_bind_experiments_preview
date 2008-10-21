@@ -1,7 +1,8 @@
 #
 # Parses the mutex trace data from BIND and produces from it the
 # N worst mutexes in the program. Badness is defined by a high
-# ratio of block time to hold-time.
+# ratio of block time to hold-time. The trace data should be given
+# by standard input; just run BIND with -D.
 #
 NumberResultsReturned = ARGV[0].to_i
 
