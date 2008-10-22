@@ -42,6 +42,6 @@ IO.popen('-') do |pipe|
 		
 		killBind
 		$stderr.puts pipe.gets
-		puts "#{totalQps / Repetitions} queries per second\"
+		puts "#{totalQps / Repetitions} queries per second"
 	end
 end

@@ -98,12 +98,12 @@ Repetitions.times do |repNumber|
 	IO.popen("-", "r+") do |pipe|
 		if pipe.nil?
 			startBind(Logged) do |bindIn, bindOut, bindErr|
-				$stderr.puts "Started BIND!"
+				$stdout.puts "Started BIND!"
 
 				# BIND will be ended by an interrupt signal from the parent:
 				# Note race condition here!
 				trap('INT')	{}
-				puts "Bind Terminated!"
+				$stdout.puts "Bind Terminated!"
 			end
 		else
 			# Wait for the other thread to get BIND ready
@@ -114,6 +114,7 @@ Repetitions.times do |repNumber|
 			         "-p #{Port} -q 400 -d #{ExperimentsRoot}/queries.dat", "r") do |queryperfStdio|
 				$stderr.puts "Started queryperf!"
 				$stderr.puts "Waiting for queryperf to finish..."
+				queryperfStdio.readlines
 			end
 
 			# Kill BIND and synchronize such that itm.log has been created.
@@ -139,6 +140,7 @@ Repetitions.times do |repNumber|
 					thisEntry.merge!(pieceHash(piece))
 				end
 			end
+			$stderr.puts thisEntry
 
 			stats.record(thisEntry)
 		end
