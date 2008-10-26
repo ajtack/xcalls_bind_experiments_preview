@@ -1,0 +1,36 @@
+\documentclass{article}
+\usepackage{graphics,url,times,helvet,hyphenat,hyperref}
+\usepackage{multirow}
+
+\begin{document}
+
+\newcommand{\mypar}[1]{\vspace{0.1cm} \noindent \textbf{#1}}
+\newcommand{\myitem}{\vspace{-0.1cm} \item}
+\newcommand{\todo}[1]{\textbf{TODO [#1]???}} 
+\newcommand{\fixme}[1]{\textbf{FIXME [#1]???}} 
+\newcommand{\remark}[1]{\textbf{REMARK [#1]???}} 
+\newcommand{\codesm}[1]{\texttt{\small #1}}
+\newcommand{\eg}{\textit{e.g.}}
+\newcommand{\ie}{\textit{i.e.}}
+\newcommand{\etal}{\textit{et al.}}
+\newcommand{\xcalls}{\textit{xCalls}}
+\newcommand{\tmatomic}{\texttt{\_\_tm\_atomic}}
+\newcommand{\tmwaiver}{\texttt{\_\_tm\_waiver}}
+
+%don't want date printed
+\date{}
+
+%make title bold and 14 pt font (Latex default is non-bold, 16 pt)
+\title{\textsf{\Large xCalls Guide}\\ \textsf{\small Revision 0.2}}
+
+\maketitle
+
+\thispagestyle{empty}
+
+
+\input{about.tex}
+\input{intro.tex}
+\input{buildenv.tex}
+\input{api.tex}
+\input{goodpractice.tex}
+\end{document}

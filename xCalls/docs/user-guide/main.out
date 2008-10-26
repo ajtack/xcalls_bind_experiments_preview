@@ -1,0 +1,17 @@
+\BOOKMARK [1][-]{section.1}{About this document}{}
+\BOOKMARK [2][-]{subsection.1.1}{Conventions and Symbols}{section.1}
+\BOOKMARK [2][-]{subsection.1.2}{Related information}{section.1}
+\BOOKMARK [1][-]{section.2}{Introduction}{}
+\BOOKMARK [2][-]{subsection.2.1}{xCalls}{section.2}
+\BOOKMARK [2][-]{subsection.2.2}{Availability}{section.2}
+\BOOKMARK [1][-]{section.3}{Build Process}{}
+\BOOKMARK [2][-]{subsection.3.1}{Building Library}{section.3}
+\BOOKMARK [2][-]{subsection.3.2}{Building Applications}{section.3}
+\BOOKMARK [3][-]{subsubsection.3.2.1}{Symbol definitions}{subsection.3.2}
+\BOOKMARK [3][-]{subsubsection.3.2.2}{Header files}{subsection.3.2}
+\BOOKMARK [1][-]{section.4}{Programming Interface}{}
+\BOOKMARK [2][-]{subsection.4.1}{TM Interface}{section.4}
+\BOOKMARK [2][-]{subsection.4.2}{Sentinels Interface}{section.4}
+\BOOKMARK [2][-]{subsection.4.3}{xCalls Interface}{section.4}
+\BOOKMARK [3][-]{subsubsection.4.3.1}{Memory Allocation}{subsection.4.3}
+\BOOKMARK [1][-]{section.5}{Good Practice Guidelines}{}

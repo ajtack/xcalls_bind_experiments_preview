@@ -1,0 +1,35 @@
+opts = Options('custom.py')
+opts.Add(BoolOption('test', 'Run unit tests', 0))
+opts.Add(EnumOption('mode', 'Set library type', 'debug', allowed_values=('debug', 'release')))
+opts.Add(EnumOption('linkage', 'Set library linkage', 'dynamic', allowed_values=('static', 'dynamic')))
+opts.Add(EnumOption('stats', 'Build with statistics support', 'enable', allowed_values=('enable', 'disable')))
+env = Environment(options = opts)
+Help(opts.GenerateHelpText(env))
+
+# Setup environment flags
+env['CC'] = '/u/t/a/tack/installed/intel/cc/10.0.506/bin/icc'
+env['CCFLAGS'] = '-Qtm_enabled'
+env.Append(CCFLAGS = 	' -D_REENTRANT -D_GNU_SOURCE' + \
+								 			' -DTM_CALLABLE="__attribute__ ((tm_callable))" -DTM_WAIVER="__attribute__ ((tm_pure))"')
+
+testenv = env.Clone()
+
+env.Append(CCFLAGS = 	' -Wall -Wmissing-prototypes -Wcast-qual -Wwrite-strings -Wformat -Wpointer-arith')
+
+if env['mode'] == 'debug':
+	env.Append(CCFLAGS = ' -g -O0')
+elif env['mode'] == 'release':
+	env.Append(CCFLAGS = ' -O2')
+
+if env['stats'] == 'enable':
+	env.Append(CCFLAGS = ' -DTXC_STATISTICS_ENABLED')
+
+Export('env')
+ 
+SConscript('src/SConscript', variant_dir = 'build')
+
+#Testing Environment
+if testenv['test'] == 1:
+	Export('testenv')
+	SConscript('tests/SConscript')
+

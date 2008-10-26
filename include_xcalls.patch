@@ -1,0 +1,11 @@
+diff -Naur -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/Makefile.in changed/lib/isc/Makefile.in
+--- bind-9.3.5-P2/lib/isc/Makefile.in	2004-07-20 02:01:58.000000000 -0500
++++ changed/lib/isc/Makefile.in	2008-10-22 13:03:59.000000000 -0500
+@@ -25,6 +25,7 @@
+ 
+ CINCLUDES =	-I${srcdir}/unix/include \
+ 		-I${srcdir}/@ISC_THREAD_DIR@/include \
++		-I$(PWD)/../../../xCalls/src/include \
+ 		-I./include \
+ 		-I${srcdir}/include
+ CDEFINES =

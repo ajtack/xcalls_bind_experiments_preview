@@ -1,0 +1,121 @@
+\section{Programming Interface}
+
+
+\subsection{TM Interface}
+
+The Transactional Memory (TM) interface provides wrapper macros and functions for 
+defining and manipulating transactions which allow the safe invocation of \xcalls. 
+This interface is intended to be used both by the application and \xcalls
+library programmer.
+
+\paragraph {Wrapper Macros}:\newline
+\begin{tabular*}{12cm}{p{4cm}p{8cm}}
+\verb!XACT_BEGIN(tag)! 	& Begins a transaction block. The \texttt{tag} field is 
+mandatory and it is used to name the transaction block. \\
+\verb!XACT_END(tag)! 		& Ends a transaction block \\
+\verb!XACT_RETRY! 			&	Forces abort and restart of the current transaction.  \\
+\verb!GET_TRANSACTION_MODE! \verb!(xact_mode)! &  Returns the transactional mode 
+of the active thread	(non-transactional, optimistic/pessimistic transaction, 
+irrevocable transaction)	\\
+\verb!XACT_SWITCH_TO_! \verb!IRREVOCABLE!  & Forces the current transaction to execute 
+in \xcalls~irrevocable mode.	\\
+\end{tabular*}
+\newline
+\newline
+Since \verb!XACT_BEGIN! 
+and \verb!XACT_END! wrap the \tmatomic~keyword, they must be lexically scoped.
+For example the following is illegal:
+
+\begin{verbatim}
+
+__attribute__ ((tm_callable)) 
+void goo() {
+  ...
+  XACT_END(xact_foo)
+}
+
+void foo() {
+  XACT_BEGIN(xact_foo)
+  goo();
+}
+
+\end{verbatim}
+
+
+\paragraph{Functions}:\newline
+\verb!void txc_global_init()! Initializes the TM and xCalls system. Must be 
+called before using any of the xCalls in an application.
+\newline
+\noindent\verb!void txc_thread_init()! Initializes the xCalls transaction 
+descriptor associated with each thread in an application. A thread must call it
+before using any of the xCalls.
+
+\begin{verbatim}
+void txc_register_commit_action(
+         txc_result_t (*action)(unsigned int, unsigned int *), 
+         unsigned int num_args, 
+         unsigned int *arg_list)
+\end{verbatim}
+Registers function \texttt{action} to be called when the transaction commits.
+The function accepts a list of parameters in array form which is passed to 
+function \texttt{action} when invoking it on commit.
+\texttt{action} accepts two arguments; the first is the length of the parameter 
+list and the second the list in array form. \textit{Note}: Currently the parameters 
+can be only of integral type. 
+
+
+\begin{verbatim}
+void txc_register_compensating_action(
+         txc_result_t (*action)(unsigned int, unsigned int *), 
+         unsigned int num_args, 
+         unsigned int *arg_list)
+\end{verbatim}
+Registers function \texttt{action} to be called when the transaction aborts.
+The function accepts a list of parameters in array form which is passed to 
+function \texttt{action} when invoking it on abort.
+
+\paragraph{Usage Example}
+\begin{verbatim}
+#include <txc/transaction.h>
+#include <txc/wrappers.h>
+
+void child_main(void *arg)
+{
+  txc_global_init();
+
+  XACT_BEGIN(xact_child)
+
+  XACT_END(xact_child)
+}
+
+void main()
+{
+  txc_thread_init();
+
+  pthread_create(&child, NULL, child_main, NULL);
+}
+\end{verbatim}
+
+\subsection{Sentinels Interface}
+
+The sentinel interface provides macros for manipulating the sentinel
+abstraction.
+This interface is intended to be used by the \xcalls~library programmer.
+
+\begin{tabular*}{12cm}{ll}
+\verb!SENTINEL_ACQUIRE_EXCLUSIVE(sentinel)! & Acquires sentinel in exclusive mode. \\
+\verb!SENTINEL_ACQUIRE_SHARED(sentinel)! & Acquires sentinel in shared mode.			\\
+\verb!SENTINEL_RELEASE(sentinel)! & Releases sentinel.
+\end{tabular*}
+
+
+\subsection{xCalls Interface}
+
+This interface is intended to be used by the application programmer.
+Its description is given in the document "xCalls: Safe I/O in Memory Transactions"
+
+\subsubsection{Memory Allocation}
+When passing the {\tt -fno-builtin} option to the compiler, the compiler does not use
+the transactional version of memory allocators. To resolve this issue, TxLib provides 
+the wrappers {\tt txc\_malloc, txc\_realloc, txc\_calloc, txc\_free} which use 
+the internal transactional memory allocators provided by the STM. 

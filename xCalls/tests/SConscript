@@ -1,0 +1,36 @@
+Import('testenv')
+
+def run_unit_tests(target, source, env):
+	runenv = Environment()
+	runenv['ENV']['LD_LIBRARY_PATH'] = '/p/multifacet/users/hvolos/workspace/xCalls/txc/src:/p/multifacet/users/hvolos/intel/cc/10.0.506/lib/'
+	print "Running Unit Tests..."
+	Execute ('rm tests/stderr')
+	failed_tests = 0
+	total_tests = 0
+	for test in source:
+		total_tests = total_tests + 1
+		ret = runenv.Execute('scripts/run.py -r tests/stderr ' + str(test))
+		if ret == 1:
+			failed_tests = failed_tests + 1
+	print "Total tests : " + str(total_tests) 
+	print "Failed tests: " + str(failed_tests) 
+
+testenv['CPPPATH'] = '#src/include'
+testenv['LIBS'] = 'txc'
+testenv['LINKFLAGS'] = '-Qtm_enabled'
+testenv['LIBPATH'] = '/p/multifacet/users/hvolos/workspace/xCalls/txc/src'
+testenv.Append(CCFLAGS = 	' -DTXC_XCALLS_ENABLE' 
+
+TESTS = Split("""test_commit_action
+									test_compensating_action
+									test_commit_compensating_action""")
+
+unit_tests_runner = Builder(action = run_unit_tests)
+testenv.Append(BUILDERS = {'RunUnitTests':unit_tests_runner})
+
+for c in TESTS:
+	testenv.Program(c, c+'.c')
+
+testenv.RunUnitTests('runtests', TESTS)
+
+

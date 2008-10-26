@@ -1,0 +1,39 @@
+\section{Introduction}
+
+\subsection{xCalls}
+The xCall interface enables  executing I/O and system calls
+within memory transactions. Similar to database transactions, memory
+transactions allow a programmer focus on the logic of their program
+and let the system ensure that transactions are atomic and
+isolated. However, most transactional memory systems only support
+transactions within a user-mode process. When a transaction performs
+I/O or accesses kernel resources, the atomicity and isolation guarantees
+from the TM system do not apply to the kernel.
+
+The xCall interface provides isolation and atomicity for kernel data
+objects with a new programming API for making system calls within
+transactions. Rather than making every system call transactional, the xCall API
+handles the common cases of file access, communication, and
+synchronization. xCalls provide isolation for kernel resources with
+sentinels, which are revocable lightweight user-level locks. A
+transaction acquires a sentinel exclusively when it accesses kernel
+resource, such as a file, through a system call. Competing threads
+must block until the transaction completes and release the
+sentinel. xCalls provide atomicity for system calls through a
+combination of {\em deferral}, delaying execution until the
+transaction commits, and {\em compensation}, calling back into the
+kernel to undo the side effects of a previous call. However, the xCall
+interface specifies {\em when} every call executes, so programmers are
+aware when the side effects of an xCall become visible. Finally,
+xCalls return errors asynchronously, after the transaction completes,
+when a deferred system call or compensation fails.
+
+\subsection{Availability}
+Currently the xCall interface is compatible with the Intel C/C++ software
+transactional memory (STM) compiler prototype edition 2.0. The source 
+code of the library is available through the SVN repository:
+\newline
+\begin{tabular}{ll}
+Repository Root: & \verb!/p/multifacet/projects/naxos/NAXOS_SVN_ROOT! \\
+Project: & \verb!xCalls/txc/v2/!
+\end{tabular}

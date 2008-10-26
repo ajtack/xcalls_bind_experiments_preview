@@ -1,0 +1,32 @@
+Import('env')
+
+env['CPPPATH'] = '#src/include'
+C_SRC = Split("""atomic.c
+									debug.c
+									hash.c
+									koa.c
+									logger.c
+									libc/alias.c	
+									libc/net.c
+									libc/string.c
+									libc/syscalls.c
+									libc/wordcopy.c
+									pool.c
+									printf.c
+									rtconfig.c
+									xcalls/alloc.c
+									xcalls/io.c
+									xcalls/pipe.c
+									xcalls/proc.c
+									xcalls/pthread.c
+									xcalls/socket.c
+									xcalls/stdio.c
+									xcalls/time.c
+									sentinel.c
+									stat.c
+									transaction.c""")
+
+if env['linkage'] == 'dynamic':
+	env.SharedLibrary('txc', C_SRC)
+elif env['linkage'] == 'static':
+	env.StaticLibrary('txc', C_SRC)

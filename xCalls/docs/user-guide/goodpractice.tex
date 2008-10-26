@@ -1,0 +1,77 @@
+\section{Good Practice Guidelines}
+Here we present some {\em good practice guidelines} based on our experience 
+working with the prototype edition of Intel's compiler (ICC) and the STM 
+runtime.
+
+\begin{enumerate}
+
+%%% Item 
+\item Since macros \verb!XACT_BEGIN! and \verb!XACT_END! wrap the atomic
+construct, we need to ensure that the only exit point of the transaction
+is the \verb!XACT_END!. For example in the following case \verb!return!
+is replaced with a \verb!goto! statement to ensure proper exit from the
+transaction block.
+
+\begin{verbatim}
+void foo() {
+  XACT_BEGIN(xact1)
+    ...
+    if (X>0) {
+      return;
+    }
+    ...
+  XACT_END
+}
+\end{verbatim}
+
+transformed into
+
+\begin{verbatim}
+void foo() {
+  XACT_BEGIN(xact1)
+    ...
+    if (X>0) {
+      goto xact1_end;
+    }
+    ...
+xact1_end:
+  XACT_END(xact1)
+}
+\end{verbatim}
+
+
+%%% Item 
+\item Use macro symbols \verb!TM_CALLABLE! and \verb!TM_WAIVER! instead of 
+\verb!__attribute__! \verb!((tm_callable))! and \verb!__attribute__! 
+\verb!((tm_pure))! since
+this provides independence from the compiler conventions which may unexpectedly 
+change. In fact we have seen a change between prototype versions 
+1.0 and 2.0 in the way a TM waived function is defined; annotation  
+\verb!tm_waiver! has been replaced by \verb!tm_pure!.
+
+%%% Item 
+\item ICC provides the \tmwaiver block construct to escape statements. For
+example in the following piece of code the compiler does not instrument
+the accesses to shared variables X and Y and does not generate any call for 
+transition to irrevocable mode before printf is called. 
+ 
+\begin{verbatim}
+	XACT_BEGIN(xact1)  
+    ...
+    __tm_waiver {
+      X = Y + 1;
+      printf("%d", X); 
+    }
+    ...
+	XACT_END(xact1)  
+}
+\end{verbatim}
+
+{\em Note:} It looks like the compiler is buggy and sometimes it does intrument
+statements wrappped inside a \tmwaiver block construct so bare this in mind. 
+
+
+%%% Item
+
+
+\end{enumerate}

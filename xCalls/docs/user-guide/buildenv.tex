@@ -1,0 +1,72 @@
+\section{Build Process}
+
+\subsection{Building Library}
+TxLib is built by invoking the SCons software construction tool in   
+the \verb!$XCALLS_HOME! directory.    
+
+\begin{verbatim}
+% scons
+\end{verbatim}
+
+\noindent The built process can be parameterized using the following set of arguments:
+
+\begin{itemize}
+\item \verb!mode=[debug, release]! Builds either a library with debugging
+support or an optimized version for use in productivity environments.  
+\item \verb!linkage=[dynamic, static]! Builds either a dynamic shared library (.so)
+ or a static archive (.a).  
+\item \verb!stats=[enable,disable]! Builds the library with profiling support.   
+\item \verb!test=[disable,enable]! Builds the library and then tests the library 
+using the unit tests found under \verb!$XCALLS_HOME!/tests   
+\end{itemize}   
+
+The first option is the default one. 
+
+\subsection{Building Applications}
+Makefiles used to build applications using the xCalls library should be 
+modified in accordance to the guidelines presented here. 
+
+\subsubsection{Symbol definitions}
+The following symbols must be defined when invoking the compiler:
+\begin{itemize}
+\item \verb!_GNU_SOURCE!
+\item \verb!TXC_XCALLS_ENABLE!
+\item \verb!TM_CALLABLE="__attribute__ ((tm_callable))"!
+\item \verb!TM_WAIVER="__attribute__ ((tm_pure))"!
+\end{itemize}
+
+\paragraph{Invocation example}
+\begin{verbatim}
+icc  -Qtm_enabled -D_GNU_SOURCE -DTXC_XCALLS_ENABLE 
+-DTM_CALLABLE="__attribute__ ((tm_callable))" 
+-DTM_WAIVER="__attribute__ ((tm_pure))" 
+\end{verbatim}
+
+\subsubsection{Header files}
+The xCall interface is available through the following header file:
+\begin{itemize}
+\item \verb!txc.h!
+\end{itemize}
+
+\noindent These files are available in 
+\verb!$XCALLS_HOME/include!
+
+\paragraph{Invocation example}
+\begin{verbatim}
+icc -I txc/include
+\end{verbatim}
+
+\paragraph{Important Note} The icc compiler by default uses built-in versions
+of common function such as {\tt printf, memcpy}, etc called {\em intrinsic} functions. 
+This also includes the transactional version of memory allocation routines 
+({\tt malloc, realloc, calloc, free}).
+However, we have noticed that the compiler might generate incorrect code when 
+using the built-in versions inside transactions. For example, we came across
+a case where the compiler would silently without any warning message inline 
+{\tt memset} inside a transaction but incorrectly
+not instrument the memory references produced by the inlining. 
+To avoid such unexpected problems we recommend passing the {\tt -fno-builtin} option
+to the compiler. However this has the side effect that the compiler does not use
+the transactional version of memory allocators. TxLib provides wrappers that use 
+the internal transactional memory allocators. See section \ref{section:xcalls:memalloc} 
+for more information.      

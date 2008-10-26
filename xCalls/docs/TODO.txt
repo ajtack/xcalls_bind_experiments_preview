@@ -1,0 +1,23 @@
+lib:
+====
+- Currently commit/compensation actions do not post back failures. Implement
+  the error handling module. 
+- Blocking I/O aborts transaction and issues select() before transaction
+  retries; if file descriptor is opened inside the transaction things get
+  complicated
+- Enhance statistics module to print description of each statistic when needed
+- In the previous version of TxLib we pre-acquired sentinels in sorted order
+  after a transaction restart. Current version doesn't support this. Ideally
+  we would like to support both schemes and evaluate this design point.
+- txc_sendmsg is not transactional. we didn't need it in our workloads.
+  Implement it if it appears in any of our workloads.
+
+ 
+
+tests:
+======
+- test self abort functionality when sentinel blocks; use hash functions to
+  ensure that you always abort??? 
+- test switch to irrevocable mode when need to fallback
+- test self abort when doing a blocking I/O call  
+
