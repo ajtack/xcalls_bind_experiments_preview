@@ -40,6 +40,7 @@ $(EXPERIMENTS_DIRECTORY)/queries.dat: named.conf
 
 zones/db.example.com: utilities/generate_example_zone.rb
 	@echo "Generating a local authoritative zone ..."
+	@mkdir -p zones
 	@curl -s http://www.mit.edu/people/cdemello/univ-full.html | \
 		ruby utilities/scrape_domains.rb | \
 		ruby utilities/generate_example_zone.rb > $@
