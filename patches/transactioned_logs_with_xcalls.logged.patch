@@ -1,0 +1,1411 @@
+diff -Naur -x '._*' -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' old/lib/isc/task.c bind-9.3.5-P2/lib/isc/task.c
+--- old/lib/isc/task.c	2004-10-14 19:45:45.000000000 -0500
++++ bind-9.3.5-P2/lib/isc/task.c	2008-10-28 21:53:24.000000000 -0500
+@@ -38,6 +38,7 @@
+ #include <isc/task.h>
+ #include <isc/thread.h>
+ #include <isc/util.h>
++#include <txc.h>
+ 
+ #ifndef ISC_PLATFORM_USETHREADS
+ #include "task_p.h"
+@@ -1004,6 +1005,7 @@
+ WINAPI
+ #endif
+ run(void *uap) {
++	txc_thread_init();
+ 	isc_taskmgr_t *manager = uap;
+ 
+ 	XTHREADTRACE(isc_msgcat_get(isc_msgcat, ISC_MSGSET_GENERAL,
+diff -Naur -x '._*' -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' old/lib/isc/unix/socket.c bind-9.3.5-P2/lib/isc/unix/socket.c
+--- old/lib/isc/unix/socket.c	2008-07-28 23:43:57.000000000 -0500
++++ bind-9.3.5-P2/lib/isc/unix/socket.c	2008-10-28 16:53:19.000000000 -0500
+@@ -51,6 +51,7 @@
+ #include <isc/task.h>
+ #include <isc/thread.h>
+ #include <isc/util.h>
++#include <txc.h>
+ 
+ #include "errno2result.h"
+ 
+@@ -2333,6 +2334,8 @@
+ 	int maxfd;
+ 	char strbuf[ISC_STRERRORSIZE];
+ 
++	txc_thread_init();
++
+ 	/*
+ 	 * Get the control fd here.  This will never change.
+ 	 */
+diff -Naur -x '._*' -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' old/lib/isc/timer.c bind-9.3.5-P2/lib/isc/timer.c
+--- old/lib/isc/timer.c	2008-07-29 13:34:29.000000000 -0500
++++ bind-9.3.5-P2/lib/isc/timer.c	2008-10-28 16:50:19.000000000 -0500
+@@ -31,6 +31,7 @@
+ #include <isc/time.h>
+ #include <isc/timer.h>
+ #include <isc/util.h>
++#include <txc.h>
+ 
+ #ifndef ISC_PLATFORM_USETHREADS
+ #include "timer_p.h"
+@@ -703,6 +704,8 @@
+ 	isc_time_t now;
+ 	isc_result_t result;
+ 
++	txc_thread_init();
++
+ 	LOCK(&manager->lock);
+ 	while (!manager->done) {
+ 		TIME_NOW(&now);
+diff -Naur -x '._*' -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' old/bin/named/main.c bind-9.3.5-P2/bin/named/main.c
+--- old/bin/named/main.c	2006-11-10 12:51:06.000000000 -0600
++++ bind-9.3.5-P2/bin/named/main.c	2008-10-28 16:20:54.000000000 -0500
+@@ -66,6 +66,8 @@
+ #include <named/ns_smf_globals.h>
+ #endif
+ 
++#include <txc.h>
++
+ /*
+  * Include header files for database drivers here.
+  */
+@@ -781,6 +783,9 @@
+ 	char *instance = NULL;
+ #endif
+ 
++	txc_global_init();
++	txc_thread_init();
++
+ 	/*
+ 	 * Record version in core image.
+ 	 * strings named.core | grep "named version:"
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/bin/check/check-tool.c changed/bin/check/check-tool.c
+--- bind-9.3.5-P2/bin/check/check-tool.c	2007-09-13 00:18:07.000000000 -0500
++++ changed/bin/check/check-tool.c	2008-10-28 00:28:05.000000000 -0500
+@@ -62,7 +62,7 @@
+ 	RUNTIME_CHECK(isc_log_create(mctx, &log, &logconfig) == ISC_R_SUCCESS);
+ 	isc_log_setcontext(log);
+ 
+-	destination.file.stream = stdout;
++	destination.file.descriptor = 1;
+ 	destination.file.name = NULL;
+ 	destination.file.versions = ISC_LOG_ROLLNEVER;
+ 	destination.file.maximum_size = 0;
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/bin/dnssec/dnssectool.c changed/bin/dnssec/dnssectool.c
+--- bind-9.3.5-P2/bin/dnssec/dnssectool.c	2005-07-01 21:42:43.000000000 -0500
++++ changed/bin/dnssec/dnssectool.c	2008-10-28 00:28:15.000000000 -0500
+@@ -176,7 +176,7 @@
+ 	 *  - the program name and logging level are printed
+ 	 *  - no time stamp is printed
+ 	 */
+-	destination.file.stream = stderr;
++	destination.file.descriptor = 2;
+ 	destination.file.name = NULL;
+ 	destination.file.versions = ISC_LOG_ROLLNEVER;
+ 	destination.file.maximum_size = 0;
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/bin/named/log.c changed/bin/named/log.c
+--- bind-9.3.5-P2/bin/named/log.c	2007-08-28 02:19:08.000000000 -0500
++++ changed/bin/named/log.c	2008-10-28 00:24:27.000000000 -0500
+@@ -117,7 +117,7 @@
+ 	 * instead, unless the the -g option was given.
+ 	 */
+ 	if (! ns_g_logstderr) {
+-		destination.file.stream = NULL;
++		destination.file.descriptor = 0;
+ 		destination.file.name = "named.run";
+ 		destination.file.versions = ISC_LOG_ROLLNEVER;
+ 		destination.file.maximum_size = 0;
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/bin/named/logconf.c changed/bin/named/logconf.c
+--- bind-9.3.5-P2/bin/named/logconf.c	2007-08-28 02:19:08.000000000 -0500
++++ changed/bin/named/logconf.c	2008-10-28 00:25:16.000000000 -0500
+@@ -148,7 +148,7 @@
+ 		    cfg_obj_isuint64(sizeobj) &&
+ 		    cfg_obj_asuint64(sizeobj) < ISC_OFFSET_MAXIMUM)
+ 			size = (isc_offset_t)cfg_obj_asuint64(sizeobj);
+-		dest.file.stream = NULL;
++		dest.file.descriptor = 0;
+ 		dest.file.name = cfg_obj_asstring(pathobj);
+ 		dest.file.versions = versions;
+ 		dest.file.maximum_size = size;
+@@ -165,7 +165,7 @@
+ 		dest.facility = facility;
+ 	} else if (stderrobj != NULL) {
+ 		type = ISC_LOG_TOFILEDESC;
+-		dest.file.stream = stderr;
++		dest.file.descriptor = 2;  // stderr is FD #2
+ 		dest.file.name = NULL;
+ 		dest.file.versions = ISC_LOG_ROLLNEVER;
+ 		dest.file.maximum_size = 0;
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/bin/rndc/rndc.c changed/bin/rndc/rndc.c
+--- bind-9.3.5-P2/bin/rndc/rndc.c	2006-08-03 22:03:08.000000000 -0500
++++ changed/bin/rndc/rndc.c	2008-10-28 00:26:32.000000000 -0500
+@@ -618,7 +618,7 @@
+ 	DO("create logging context", isc_log_create(mctx, &log, &logconfig));
+ 	isc_log_setcontext(log);
+ 	DO("setting log tag", isc_log_settag(logconfig, progname));
+-	logdest.file.stream = stderr;
++	logdest.file.descriptor = 2;
+ 	logdest.file.name = NULL;
+ 	logdest.file.versions = ISC_LOG_ROLLNEVER;
+ 	logdest.file.maximum_size = 0;
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/error.c changed/lib/isc/error.c
+--- bind-9.3.5-P2/lib/isc/error.c	2004-03-06 02:14:28.000000000 -0600
++++ changed/lib/isc/error.c	2008-10-27 23:50:37.000000000 -0500
+@@ -61,6 +61,7 @@
+ 	va_end(args);
+ }
+ 
++TM_WAIVER
+ void
+ isc_error_fatal(const char *file, int line, const char *format, ...) {
+ 	va_list args;
+@@ -71,6 +72,7 @@
+ 	abort();
+ }
+ 
++TM_CALLABLE
+ void
+ isc_error_runtimecheck(const char *file, int line, const char *expression) {
+ 	isc_error_fatal(file, line, "RUNTIME_CHECK(%s) %s", expression,
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/include/isc/error.h changed/lib/isc/include/isc/error.h
+--- bind-9.3.5-P2/lib/isc/include/isc/error.h	2004-03-06 02:14:40.000000000 -0600
++++ changed/lib/isc/include/isc/error.h	2008-10-27 23:50:29.000000000 -0500
+@@ -39,10 +39,12 @@
+ isc_error_unexpected(const char *, int, const char *, ...)
+      ISC_FORMAT_PRINTF(3, 4);
+ 
++TM_WAIVER
+ void
+ isc_error_fatal(const char *, int, const char *, ...)
+      ISC_FORMAT_PRINTF(3, 4);
+ 
++TM_CALLABLE
+ void
+ isc_error_runtimecheck(const char *, int, const char *);
+ 
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/include/isc/log.h changed/lib/isc/include/isc/log.h
+--- bind-9.3.5-P2/lib/isc/include/isc/log.h	2007-08-28 02:19:15.000000000 -0500
++++ changed/lib/isc/include/isc/log.h	2008-10-27 09:30:01.000000000 -0500
+@@ -100,7 +100,7 @@
+  * Setting maximum_size to zero implies no maximum.
+  */
+ typedef struct isc_logfile {
+-	FILE *stream;		/* Initialized to NULL for ISC_LOG_TOFILE. */
++	int descriptor;		/* Initialized to 0 for ISC_LOG_TOFILE. */
+ 	const char *name;	/* NULL for ISC_LOG_TOFILEDESC. */
+ 	int versions;	/* >= 0, ISC_LOG_ROLLNEVER, ISC_LOG_ROLLINFINITE. */
+ 	/*
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/include/isc/mem.h changed/lib/isc/include/isc/mem.h
+--- bind-9.3.5-P2/lib/isc/include/isc/mem.h	2007-08-28 02:19:15.000000000 -0500
++++ changed/lib/isc/include/isc/mem.h	2008-10-27 12:16:32.000000000 -0500
+@@ -429,11 +429,13 @@
+ /*
+  * Pseudo-private functions for use via macros.  Do not call directly.
+  */
++TM_CALLABLE
+ void *		
+ isc__mem_get(isc_mem_t *, size_t _ISC_MEM_FLARG);
+ void 		
+ isc__mem_putanddetach(isc_mem_t **, void *,
+ 				      size_t _ISC_MEM_FLARG);
++TM_CALLABLE
+ void 		
+ isc__mem_put(isc_mem_t *, void *, size_t _ISC_MEM_FLARG);
+ void *		
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/include/isc/msgcat.h changed/lib/isc/include/isc/msgcat.h
+--- bind-9.3.5-P2/lib/isc/include/isc/msgcat.h	2004-03-06 02:14:44.000000000 -0600
++++ changed/lib/isc/include/isc/msgcat.h	2008-10-27 12:13:52.000000000 -0500
+@@ -109,6 +109,7 @@
+  *	*msgcatp == NULL
+  */
+ 
++TM_WAIVER
+ const char *
+ isc_msgcat_get(isc_msgcat_t *msgcat, int set, int message,
+ 	       const char *default_text);
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/include/isc/result.h changed/lib/isc/include/isc/result.h
+--- bind-9.3.5-P2/lib/isc/include/isc/result.h	2007-08-28 02:19:15.000000000 -0500
++++ changed/lib/isc/include/isc/result.h	2008-10-27 23:34:16.000000000 -0500
+@@ -91,6 +91,7 @@
+ 
+ ISC_LANG_BEGINDECLS
+ 
++TM_CALLABLE
+ const char *
+ isc_result_totext(isc_result_t);
+ /*
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/log.c changed/lib/isc/log.c
+--- bind-9.3.5-P2/lib/isc/log.c	2006-03-01 18:37:20.000000000 -0600
++++ changed/lib/isc/log.c	2008-10-28 00:18:57.000000000 -0500
+@@ -22,6 +22,7 @@
+ #include <config.h>
+ 
+ #include <errno.h>
++#include <fcntl.h>
+ #include <stdlib.h>
+ #include <limits.h>
+ #include <time.h>
+@@ -41,6 +42,8 @@
+ #include <isc/time.h>
+ #include <isc/util.h>
+ 
++#include <txc.h>
++
+ #define LCTX_MAGIC		ISC_MAGIC('L', 'c', 't', 'x')
+ #define VALID_CONTEXT(lctx)	ISC_MAGIC_VALID(lctx, LCTX_MAGIC)
+ 
+@@ -149,7 +152,6 @@
+ 	isc_logmodule_t *		modules;
+ 	unsigned int			module_count;
+ 	int				debug_level;
+-	isc_mutex_t			lock;
+ 	/* Locked by isc_log lock. */
+ 	isc_logconfig_t * 		logconfig;
+ 	char 				buffer[LOG_BUFFER_SIZE];
+@@ -228,9 +230,11 @@
+ static isc_result_t
+ sync_channellist(isc_logconfig_t *lcfg);
+ 
++TM_CALLABLE
+ static isc_result_t
+ greatest_version(isc_logchannel_t *channel, int *greatest);
+ 
++TM_CALLABLE
+ static isc_result_t
+ roll_log(isc_logchannel_t *channel);
+ 
+@@ -247,7 +251,7 @@
+ 
+ #define FACILITY(channel)	 (channel->destination.facility)
+ #define FILE_NAME(channel)	 (channel->destination.file.name)
+-#define FILE_STREAM(channel)	 (channel->destination.file.stream)
++#define FILE_DESCRIPTOR(channel)	 (channel->destination.file.descriptor)
+ #define FILE_VERSIONS(channel)	 (channel->destination.file.versions)
+ #define FILE_MAXSIZE(channel)	 (channel->destination.file.maximum_size)
+ #define FILE_MAXREACHED(channel) (channel->destination.file.maximum_reached)
+@@ -280,8 +284,6 @@
+ 
+ 		ISC_LIST_INIT(lctx->messages);
+ 
+-		RUNTIME_CHECK(isc_mutex_init(&lctx->lock) == ISC_R_SUCCESS);
+-
+ 		/*
+ 		 * Normally setting the magic number is the last step done
+ 		 * in a creation function, but a valid log context is needed
+@@ -364,7 +366,7 @@
+ 	}
+ 
+ 	if (result == ISC_R_SUCCESS) {
+-		destination.file.stream = stderr;
++		destination.file.descriptor = 2;  // 2 is the Stderr file descriptor
+ 		destination.file.name = NULL;
+ 		destination.file.versions = ISC_LOG_ROLLNEVER;
+ 		destination.file.maximum_size = 0;
+@@ -383,7 +385,7 @@
+ 		 */
+ 		default_channel.channel = ISC_LIST_HEAD(lcfg->channels);
+ 
+-		destination.file.stream = stderr;
++		destination.file.descriptor = 2;  // 2 is the Stderr file descriptor
+ 		destination.file.name = NULL;
+ 		destination.file.versions = ISC_LOG_ROLLNEVER;
+ 		destination.file.maximum_size = 0;
+@@ -437,12 +439,10 @@
+ 	if (result != ISC_R_SUCCESS)
+ 		return (result);
+ 
+-	LOCK(&lctx->lock);
+-
+-	old_cfg = lctx->logconfig;
+-	lctx->logconfig = lcfg;
+-
+-	UNLOCK(&lctx->lock);
++	XACT_BEGIN(config)
++		old_cfg = lctx->logconfig;
++		lctx->logconfig = lcfg;
++	XACT_END(config)
+ 
+ 	isc_logconfig_destroy(&old_cfg);
+ 
+@@ -467,8 +467,6 @@
+ 		isc_logconfig_destroy(&lcfg);
+ 	}
+ 
+-	DESTROYLOCK(&lctx->lock);
+-
+ 	while ((message = ISC_LIST_HEAD(lctx->messages)) != NULL) {
+ 		ISC_LIST_UNLINK(lctx->messages, message, link);
+ 
+@@ -524,8 +522,8 @@
+ 			DE_CONST(FILE_NAME(channel), filename);
+ 			isc_mem_free(mctx, filename);
+ 
+-			if (FILE_STREAM(channel) != NULL)
+-				(void)fclose(FILE_STREAM(channel));
++			if (FILE_DESCRIPTOR(channel) != 0)
++				(void)txc_close(FILE_DESCRIPTOR(channel));
+ 		}
+ 
+ 		isc_mem_free(mctx, channel->name);
+@@ -740,7 +738,7 @@
+ 		 */
+ 		FILE_NAME(channel) =
+ 			isc_mem_strdup(mctx, destination->file.name);
+-		FILE_STREAM(channel) = NULL;
++		FILE_DESCRIPTOR(channel) = 0;
+ 		FILE_VERSIONS(channel) = destination->file.versions;
+ 		FILE_MAXSIZE(channel) = destination->file.maximum_size;
+ 		FILE_MAXREACHED(channel) = ISC_FALSE;
+@@ -748,7 +746,7 @@
+ 
+ 	case ISC_LOG_TOFILEDESC:
+ 		FILE_NAME(channel) = NULL;
+-		FILE_STREAM(channel) = destination->file.stream;
++		FILE_DESCRIPTOR(channel) = destination->file.descriptor;
+ 		FILE_MAXSIZE(channel) = 0;
+ 		FILE_VERSIONS(channel) = ISC_LOG_ROLLNEVER;
+ 		break;
+@@ -947,23 +945,22 @@
+ 
+ 	REQUIRE(VALID_CONTEXT(lctx));
+ 
+-	LOCK(&lctx->lock);
+-
+-	lctx->debug_level = level;
+-	/*
+-	 * Close ISC_LOG_DEBUGONLY channels if level is zero.
+-	 */
+-	if (lctx->debug_level == 0)
+-		for (channel = ISC_LIST_HEAD(lctx->logconfig->channels);
+-		     channel != NULL;
+-		     channel = ISC_LIST_NEXT(channel, link))
+-			if (channel->type == ISC_LOG_TOFILE &&
+-			    (channel->flags & ISC_LOG_DEBUGONLY) != 0 &&
+-			    FILE_STREAM(channel) != NULL) {
+-				(void)fclose(FILE_STREAM(channel));
+-				FILE_STREAM(channel) = NULL;
+-			}
+-	UNLOCK(&lctx->lock);
++	XACT_BEGIN(debug);
++		lctx->debug_level = level;
++		/*
++		 * Close ISC_LOG_DEBUGONLY channels if level is zero.
++		 */
++		if (lctx->debug_level == 0)
++			for (channel = ISC_LIST_HEAD(lctx->logconfig->channels);
++			     channel != NULL;
++			     channel = ISC_LIST_NEXT(channel, link))
++				if (channel->type == ISC_LOG_TOFILE &&
++				    (channel->flags & ISC_LOG_DEBUGONLY) != 0 &&
++				    FILE_DESCRIPTOR(channel) != 0) {
++					(void)txc_close(FILE_DESCRIPTOR(channel));
++					FILE_DESCRIPTOR(channel) = 0;
++				}
++	XACT_END(debug);
+ }
+ 
+ unsigned int
+@@ -1026,17 +1023,17 @@
+ 
+ 	REQUIRE(VALID_CONTEXT(lctx));
+ 
+-	LOCK(&lctx->lock);
+-	for (channel = ISC_LIST_HEAD(lctx->logconfig->channels);
+-	     channel != NULL;
+-	     channel = ISC_LIST_NEXT(channel, link))
++	XACT_BEGIN(close);
++		for (channel = ISC_LIST_HEAD(lctx->logconfig->channels);
++		     channel != NULL;
++		     channel = ISC_LIST_NEXT(channel, link))
+ 
+-		if (channel->type == ISC_LOG_TOFILE &&
+-		    FILE_STREAM(channel) != NULL) {
+-			(void)fclose(FILE_STREAM(channel));
+-			FILE_STREAM(channel) = NULL;
+-		}
+-	UNLOCK(&lctx->lock);
++			if (channel->type == ISC_LOG_TOFILE &&
++			    FILE_DESCRIPTOR(channel) != 0) {
++				(void)txc_close(FILE_DESCRIPTOR(channel));
++				FILE_DESCRIPTOR(channel) = 0;
++			}
++	XACT_END(close);
+ }
+ 
+ /****
+@@ -1131,6 +1128,12 @@
+ 	return (ISC_R_SUCCESS);
+ }
+ 
++
++TM_WAIVER
++long strtol(const char *, char **, int);
++
++
++TM_CALLABLE
+ static isc_result_t
+ greatest_version(isc_logchannel_t *channel, int *greatestp) {
+ 	/* XXXDCL HIGHLY NT */
+@@ -1202,6 +1205,7 @@
+ 	return (ISC_R_SUCCESS);
+ }
+ 
++TM_CALLABLE
+ static isc_result_t
+ roll_log(isc_logchannel_t *channel) {
+ 	int i, n, greatest;
+@@ -1315,7 +1319,7 @@
+ 	const char *path;
+ 
+ 	REQUIRE(channel->type == ISC_LOG_TOFILE);
+-	REQUIRE(FILE_STREAM(channel) == NULL);
++	REQUIRE(FILE_DESCRIPTOR(channel) == 0);
+ 
+ 	path = FILE_NAME(channel);
+ 
+@@ -1359,7 +1363,16 @@
+ 		}
+ 	}
+ 
+-	result = isc_stdio_open(path, "a", &FILE_STREAM(channel));
++	{
++		int fd;
++		fd = txc_open(path, O_APPEND, 0);
++		if (fd < 0)	{
++			result = isc__errno2result(errno);
++		} else {
++			FILE_DESCRIPTOR(channel) = fd;
++			result = ISC_R_SUCCESS;
++		}
++	}
+ 
+ 	return (result);
+ }
+@@ -1438,317 +1451,319 @@
+ 	time_string[0]  = '\0';
+ 	level_string[0] = '\0';
+ 
+-	LOCK(&lctx->lock);
+-
+-	lctx->buffer[0] = '\0';
++	XACT_BEGIN(bigone);
++		lctx->buffer[0] = '\0';
+ 	
+-	lcfg = lctx->logconfig;
++		lcfg = lctx->logconfig;
+ 
+-	category_channels = ISC_LIST_HEAD(lcfg->channellists[category->id]);
++		category_channels = ISC_LIST_HEAD(lcfg->channellists[category->id]);
+ 
+-	/*
+-	 * XXXDCL add duplicate filtering? (To not write multiple times to
+-	 * the same source via various channels).
+-	 */
+-	do {
+ 		/*
+-		 * If the channel list end was reached and a match was made,
+-		 * everything is finished.
++		 * XXXDCL add duplicate filtering? (To not write multiple times to
++		 * the same source via various channels).
+ 		 */
+-		if (category_channels == NULL && matched)
+-			break;
+-
+-		if (category_channels == NULL && ! matched &&
+-		    category_channels != ISC_LIST_HEAD(lcfg->channellists[0]))
++		do {
+ 			/*
+-			 * No category/module pair was explicitly configured.
+-			 * Try the category named "default".
++			 * If the channel list end was reached and a match was made,
++			 * everything is finished.
+ 			 */
+-			category_channels =
+-				ISC_LIST_HEAD(lcfg->channellists[0]);
++			if (category_channels == NULL && matched)
++				break;
+ 
+-		if (category_channels == NULL && ! matched)
+-			/*
+-			 * No matching module was explicitly configured
+-			 * for the category named "default".  Use the internal
+-			 * default channel.
+-			 */
+-			category_channels = &default_channel;
++			if (category_channels == NULL && ! matched &&
++			    category_channels != ISC_LIST_HEAD(lcfg->channellists[0]))
++				/*
++				 * No category/module pair was explicitly configured.
++				 * Try the category named "default".
++				 */
++				category_channels =
++					ISC_LIST_HEAD(lcfg->channellists[0]);
+ 
+-		if (category_channels->module != NULL &&
+-		    category_channels->module != module) {
+-			category_channels = ISC_LIST_NEXT(category_channels,
+-							  link);
+-			continue;
+-		}
++			if (category_channels == NULL && ! matched)
++				/*
++				 * No matching module was explicitly configured
++				 * for the category named "default".  Use the internal
++				 * default channel.
++				 */
++				category_channels = &default_channel;
+ 
+-		matched = ISC_TRUE;
++			if (category_channels->module != NULL &&
++			    category_channels->module != module) {
++				category_channels = ISC_LIST_NEXT(category_channels,
++								  link);
++				continue;
++			}
+ 
+-		channel = category_channels->channel;
+-		category_channels = ISC_LIST_NEXT(category_channels, link);
++			matched = ISC_TRUE;
+ 
+-		if (((channel->flags & ISC_LOG_DEBUGONLY) != 0) &&
+-		    lctx->debug_level == 0)
+-			continue;
++			channel = category_channels->channel;
++			category_channels = ISC_LIST_NEXT(category_channels, link);
+ 
+-		if (channel->level == ISC_LOG_DYNAMIC) {
+-			if (lctx->debug_level < level)
++			if (((channel->flags & ISC_LOG_DEBUGONLY) != 0) &&
++			    lctx->debug_level == 0)
+ 				continue;
+-		} else if (channel->level < level)
+-			continue;
+ 
+-		if ((channel->flags & ISC_LOG_PRINTTIME) != 0 &&
+-		    time_string[0] == '\0') {
+-			isc_time_t isctime;
+-			
+-			TIME_NOW(&isctime);
+-			isc_time_formattimestamp(&isctime, time_string,
+-						 sizeof(time_string));
+-		}
++			if (channel->level == ISC_LOG_DYNAMIC) {
++				if (lctx->debug_level < level)
++					continue;
++			} else if (channel->level < level)
++				continue;
+ 
+-		if ((channel->flags & ISC_LOG_PRINTLEVEL) != 0 &&
+-		    level_string[0] == '\0') {
+-			if (level < ISC_LOG_CRITICAL)
+-				snprintf(level_string, sizeof(level_string),
+-					 isc_msgcat_get(isc_msgcat,
+-						        ISC_MSGSET_LOG,
+-						        ISC_MSG_LEVEL,
+-						        "level %d: "),
+-					 level);
+-			else if (level > ISC_LOG_DYNAMIC)
+-				snprintf(level_string, sizeof(level_string),
+-					 "%s %d: ", log_level_strings[0],
+-					 level);
+-			else
+-				snprintf(level_string, sizeof(level_string),
+-					 "%s: ", log_level_strings[-level]);
+-		}
++			if ((channel->flags & ISC_LOG_PRINTTIME) != 0 &&
++			    time_string[0] == '\0') {
++				isc_time_t isctime;
++			
++				TIME_NOW(&isctime);
++				isc_time_formattimestamp(&isctime, time_string,
++							 sizeof(time_string));
++			}
+ 
+-		/*
+-		 * Only format the message once.
+-		 */
+-		if (lctx->buffer[0] == '\0') {
+-			(void)vsnprintf(lctx->buffer, sizeof(lctx->buffer),
+-					iformat, args);
++			if ((channel->flags & ISC_LOG_PRINTLEVEL) != 0 &&
++			    level_string[0] == '\0') {
++				if (level < ISC_LOG_CRITICAL)
++					txc_snprintf(level_string, sizeof(level_string),
++						 isc_msgcat_get(isc_msgcat,
++							        ISC_MSGSET_LOG,
++							        ISC_MSG_LEVEL,
++							        "level %d: "),
++						 level);
++				else if (level > ISC_LOG_DYNAMIC)
++					txc_snprintf(level_string, sizeof(level_string),
++						 "%s %d: ", log_level_strings[0],
++						 level);
++				else
++					txc_snprintf(level_string, sizeof(level_string),
++						 "%s: ", log_level_strings[-level]);
++			}
+ 
+ 			/*
+-			 * Check for duplicates.
++			 * Only format the message once.
+ 			 */
+-			if (write_once) {
+-				isc_logmessage_t *message, *new;
+-				isc_time_t oldest;
+-				isc_interval_t interval;
+-
+-				isc_interval_set(&interval,
+-						 lcfg->duplicate_interval, 0);
++			if (lctx->buffer[0] == '\0') {
++				(void)txc_vsnprintf(lctx->buffer, sizeof(lctx->buffer),
++						iformat, args);
+ 
+ 				/*
+-				 * 'oldest' is the age of the oldest messages
+-				 * which fall within the duplicate_interval
+-				 * range.
++				 * Check for duplicates.
+ 				 */
+-				TIME_NOW(&oldest);
+-				if (isc_time_subtract(&oldest, &interval, &oldest)
+-				    != ISC_R_SUCCESS)
++				if (write_once) {
++					isc_logmessage_t *message, *new;
++					isc_time_t oldest;
++					isc_interval_t interval;
++
++					isc_interval_set(&interval,
++							 lcfg->duplicate_interval, 0);
++
+ 					/*
+-					 * Can't effectively do the checking
+-					 * without having a valid time.
++					 * 'oldest' is the age of the oldest messages
++					 * which fall within the duplicate_interval
++					 * range.
+ 					 */
+-					message = NULL;
+-				else
+-					message =ISC_LIST_HEAD(lctx->messages);
+-
+-				while (message != NULL) {
+-					if (isc_time_compare(&message->time,
+-							     &oldest) < 0) {
++					TIME_NOW(&oldest);
++					if (isc_time_subtract(&oldest, &interval, &oldest)
++					    != ISC_R_SUCCESS)
+ 						/*
+-						 * This message is older
+-						 * than the duplicate_interval,
+-						 * so it should be dropped from
+-						 * the history.
+-						 *
+-						 * Setting the interval to be
+-						 * to be longer will obviously
+-						 * not cause the expired
+-						 * message to spring back into
+-						 * existence.
++						 * Can't effectively do the checking
++						 * without having a valid time.
+ 						 */
+-						new = ISC_LIST_NEXT(message,
+-								    link);
++						message = NULL;
++					else
++						message = ISC_LIST_HEAD(lctx->messages);
++
++					while (message != NULL) {
++						if (isc_time_compare(&message->time,
++								     &oldest) < 0) {
++							/*
++							 * This message is older
++							 * than the duplicate_interval,
++							 * so it should be dropped from
++							 * the history.
++							 *
++							 * Setting the interval to be
++							 * to be longer will obviously
++							 * not cause the expired
++							 * message to spring back into
++							 * existence.
++							 */
++							new = ISC_LIST_NEXT(message,
++									    link);
++
++							ISC_LIST_UNLINK(lctx->messages,
++									message, link);
++
++							isc_mem_put(lctx->mctx,
++								message,
++								sizeof(*message) + 1 +
++								strlen(message->text));
++
++							message = new;
++							continue;
++						}
+ 
+-						ISC_LIST_UNLINK(lctx->messages,
+-								message, link);
+-
+-						isc_mem_put(lctx->mctx,
+-							message,
+-							sizeof(*message) + 1 +
+-							strlen(message->text));
++						/*
++						 * This message is in the duplicate
++						 * filtering interval ...
++						 */
++						if (strcmp(lctx->buffer, message->text)
++						    == 0) {
++							/*
++							 * ... and it is a duplicate.
++							 * Unlock the mutex and
++							 * get the hell out of Dodge.
++							 */
++							// UNLOCK(&lctx->lock);
++							goto bigone_end;
++						}
+ 
+-						message = new;
+-						continue;
++						message = ISC_LIST_NEXT(message, link);
+ 					}
+ 
+ 					/*
+-					 * This message is in the duplicate
+-					 * filtering interval ...
++					 * It wasn't in the duplicate interval,
++					 * so add it to the message list.
+ 					 */
+-					if (strcmp(lctx->buffer, message->text)
+-					    == 0) {
++					new = isc_mem_get(lctx->mctx,
++							  sizeof(isc_logmessage_t) +
++							  strlen(lctx->buffer) + 1);
++					if (new != NULL) {
+ 						/*
+-						 * ... and it is a duplicate.
+-						 * Unlock the mutex and
+-						 * get the hell out of Dodge.
++						 * Put the text immediately after
++						 * the struct.  The strcpy is safe.
+ 						 */
+-						UNLOCK(&lctx->lock);
+-						return;
+-					}
+-
+-					message = ISC_LIST_NEXT(message, link);
+-				}
++						new->text = (char *)(new + 1);
++						strcpy(new->text, lctx->buffer);
+ 
+-				/*
+-				 * It wasn't in the duplicate interval,
+-				 * so add it to the message list.
+-				 */
+-				new = isc_mem_get(lctx->mctx,
+-						  sizeof(isc_logmessage_t) +
+-						  strlen(lctx->buffer) + 1);
+-				if (new != NULL) {
+-					/*
+-					 * Put the text immediately after
+-					 * the struct.  The strcpy is safe.
+-					 */
+-					new->text = (char *)(new + 1);
+-					strcpy(new->text, lctx->buffer);
++						TIME_NOW(&new->time);
+ 
+-					TIME_NOW(&new->time);
+-
+-					ISC_LIST_APPEND(lctx->messages,
+-							new, link);
++						ISC_LIST_APPEND(lctx->messages,
++								new, link);
++					}
+ 				}
+ 			}
+-		}
+ 
+-		printtime     = ISC_TF((channel->flags & ISC_LOG_PRINTTIME)
+-				       != 0);
+-		printtag      = ISC_TF((channel->flags & ISC_LOG_PRINTTAG)
+-				       != 0 && lcfg->tag != NULL);
+-		printcategory = ISC_TF((channel->flags & ISC_LOG_PRINTCATEGORY)
+-				       != 0);
+-		printmodule   = ISC_TF((channel->flags & ISC_LOG_PRINTMODULE)
+-				       != 0);
+-		printlevel    = ISC_TF((channel->flags & ISC_LOG_PRINTLEVEL)
+-				       != 0);
+-
+-		switch (channel->type) {
+-		case ISC_LOG_TOFILE:
+-			if (FILE_MAXREACHED(channel)) {
+-				/*
+-				 * If the file can be rolled, OR
+-				 * If the file no longer exists, OR
+-				 * If the file is less than the maximum size,
+-				 *    (such as if it had been renamed and
+-				 *     a new one touched, or it was truncated
+-				 *     in place)
+-				 * ... then close it to trigger reopening.
+-				 */
+-				if (FILE_VERSIONS(channel) !=
+-				    ISC_LOG_ROLLNEVER ||
+-				    (stat(FILE_NAME(channel), &statbuf) != 0 &&
+-				     errno == ENOENT) ||
+-				    statbuf.st_size < FILE_MAXSIZE(channel)) {
+-					(void)fclose(FILE_STREAM(channel));
+-					FILE_STREAM(channel) = NULL;
+-					FILE_MAXREACHED(channel) = ISC_FALSE;
+-				} else
++			printtime     = ISC_TF((channel->flags & ISC_LOG_PRINTTIME)
++					       != 0);
++			printtag      = ISC_TF((channel->flags & ISC_LOG_PRINTTAG)
++					       != 0 && lcfg->tag != NULL);
++			printcategory = ISC_TF((channel->flags & ISC_LOG_PRINTCATEGORY)
++					       != 0);
++			printmodule   = ISC_TF((channel->flags & ISC_LOG_PRINTMODULE)
++					       != 0);
++			printlevel    = ISC_TF((channel->flags & ISC_LOG_PRINTLEVEL)
++					       != 0);
++
++			switch (channel->type) {
++			case ISC_LOG_TOFILE:
++				if (FILE_MAXREACHED(channel)) {
+ 					/*
+-					 * Eh, skip it.
++					 * If the file can be rolled, OR
++					 * If the file no longer exists, OR
++					 * If the file is less than the maximum size,
++					 *    (such as if it had been renamed and
++					 *     a new one touched, or it was truncated
++					 *     in place)
++					 * ... then close it to trigger reopening.
+ 					 */
+-					break;
+-			}
+-
+-			if (FILE_STREAM(channel) == NULL) {
+-				result = isc_log_open(channel);
+-				if (result != ISC_R_SUCCESS &&
+-				    result != ISC_R_MAXSIZE &&
+-				    (channel->flags & ISC_LOG_OPENERR) == 0) {
+-					syslog(LOG_ERR,
+-					       "isc_log_open '%s' failed: %s",
+-					       FILE_NAME(channel),
+-					       isc_result_totext(result));
+-					channel->flags |= ISC_LOG_OPENERR;
++					if (FILE_VERSIONS(channel) !=
++					    ISC_LOG_ROLLNEVER ||
++					    (txc_stat(FILE_NAME(channel), &statbuf) != 0 &&
++					     errno == ENOENT) ||
++					    statbuf.st_size < FILE_MAXSIZE(channel)) {
++						(void)txc_close(FILE_DESCRIPTOR(channel));
++						FILE_DESCRIPTOR(channel) = 0;
++						FILE_MAXREACHED(channel) = ISC_FALSE;
++					} else
++						/*
++						 * Eh, skip it.
++						 */
++						break;
+ 				}
+-				if (result != ISC_R_SUCCESS)
+-					break;
+-				channel->flags &= ~ISC_LOG_OPENERR;
+-			}
+-			/* FALLTHROUGH */
+-
+-		case ISC_LOG_TOFILEDESC:
+-			fprintf(FILE_STREAM(channel), "%s%s%s%s%s%s%s%s%s%s\n",
+-				printtime     ? time_string	: "",
+-				printtime     ? " "		: "",
+-				printtag      ? lcfg->tag	: "",
+-				printtag      ? ": "		: "",
+-				printcategory ? category->name	: "",
+-				printcategory ? ": "		: "",
+-				printmodule   ? (module != NULL ? module->name
+-						 		: "no_module")
+-					      			: "",
+-				printmodule   ? ": "		: "",
+-				printlevel    ? level_string	: "",
+-				lctx->buffer);
+ 
+-			fflush(FILE_STREAM(channel));
++				if (FILE_DESCRIPTOR(channel) == 0) {
++					result = isc_log_open(channel);
++					if (result != ISC_R_SUCCESS &&
++					    result != ISC_R_MAXSIZE &&
++					    (channel->flags & ISC_LOG_OPENERR) == 0) {
++						syslog(LOG_ERR,
++						       "isc_log_open '%s' failed: %s",
++						       FILE_NAME(channel),
++						       isc_result_totext(result));
++						channel->flags |= ISC_LOG_OPENERR;
++					}
++					if (result != ISC_R_SUCCESS)
++						break;
++					channel->flags &= ~ISC_LOG_OPENERR;
++				}
++				/* FALLTHROUGH */
+ 
+-			/*
+-			 * If the file now exceeds its maximum size
+-			 * threshold, note it so that it will not be logged
+-			 * to any more.
+-			 */
+-			if (FILE_MAXSIZE(channel) > 0) {
+-				INSIST(channel->type == ISC_LOG_TOFILE);
++			case ISC_LOG_TOFILEDESC:
++				{
++					char message[1024];
++					int size = txc_sprintf(message,
++						"%s%s%s%s%s%s%s%s%s%s\n",
++						printtime     ? time_string	: "",
++						printtime     ? " "		: "",
++						printtag      ? lcfg->tag	: "",
++						printtag      ? ": "		: "",
++						printcategory ? category->name	: "",
++						printcategory ? ": "		: "",
++						printmodule   ? (module != NULL ? module->name
++								 		: "no_module")
++							      			: "",
++						printmodule   ? ": "		: "",
++						printlevel    ? level_string	: "",
++						lctx->buffer);
++					txc_write(FILE_DESCRIPTOR(channel), message, size, APPEND_ONLY);
++					txc_fsync(FILE_DESCRIPTOR(channel));
+ 
+-				/* XXXDCL NT fstat/fileno */
+-				/* XXXDCL complain if fstat fails? */
+-				if (fstat(fileno(FILE_STREAM(channel)),
+-					  &statbuf) >= 0 &&
+-				    statbuf.st_size > FILE_MAXSIZE(channel))
+-					FILE_MAXREACHED(channel) = ISC_TRUE;
+-			}
++					/*
++					 * If the file now exceeds its maximum size
++					 * threshold, note it so that it will not be logged
++					 * to any more.
++					 */
++					if (FILE_MAXSIZE(channel) > 0) {
++						INSIST(channel->type == ISC_LOG_TOFILE);
+ 
+-			break;
++						/* XXXDCL NT fstat/fileno */
++						/* XXXDCL complain if fstat fails? */
++						if (txc_stat(FILE_NAME(channel),
++							  &statbuf) >= 0 &&
++						    statbuf.st_size > FILE_MAXSIZE(channel))
++							FILE_MAXREACHED(channel) = ISC_TRUE;
++					}
+ 
+-		case ISC_LOG_TOSYSLOG:
+-			if (level > 0)
+-				syslog_level = LOG_DEBUG;
+-			else if (level < ISC_LOG_CRITICAL)
+-				syslog_level = LOG_CRIT;
+-			else
+-				syslog_level = syslog_map[-level];
++					break;
++				}
+ 
+-			(void)syslog(FACILITY(channel) | syslog_level,
+-			       "%s%s%s%s%s%s%s%s%s%s",
+-			       printtime     ? time_string	: "",
+-			       printtime     ? " "		: "",
+-			       printtag      ? lcfg->tag	: "",
+-			       printtag      ? ": "		: "",
+-			       printcategory ? category->name	: "",
+-			       printcategory ? ": "		: "",
+-			       printmodule   ? (module != NULL	? module->name
+-						 		: "no_module")
+-					      			: "",
+-			       printmodule   ? ": "		: "",
+-			       printlevel    ? level_string	: "",
+-			       lctx->buffer);
+-			break;
++			case ISC_LOG_TOSYSLOG:
++				if (level > 0)
++					syslog_level = LOG_DEBUG;
++				else if (level < ISC_LOG_CRITICAL)
++					syslog_level = LOG_CRIT;
++				else
++					syslog_level = syslog_map[-level];
+ 
+-		case ISC_LOG_TONULL:
+-			break;
++				(void)syslog(FACILITY(channel) | syslog_level,
++				       "%s%s%s%s%s%s%s%s%s%s",
++				       printtime     ? time_string	: "",
++				       printtime     ? " "		: "",
++				       printtag      ? lcfg->tag	: "",
++				       printtag      ? ": "		: "",
++				       printcategory ? category->name	: "",
++				       printcategory ? ": "		: "",
++				       printmodule   ? (module != NULL	? module->name
++							 		: "no_module")
++						      			: "",
++				       printmodule   ? ": "		: "",
++				       printlevel    ? level_string	: "",
++				       lctx->buffer);
++				break;
+ 
+-		}
++			case ISC_LOG_TONULL:
++				break;
+ 
+-	} while (1);
++			}
+ 
+-	UNLOCK(&lctx->lock);
++		} while (1);
++	XACT_END(bigone);
+ }
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/result.c changed/lib/isc/result.c
+--- bind-9.3.5-P2/lib/isc/result.c	2007-08-28 02:19:15.000000000 -0500
++++ changed/lib/isc/result.c	2008-10-28 00:16:22.000000000 -0500
+@@ -28,6 +28,7 @@
+ #include <isc/once.h>
+ #include <isc/resultclass.h>
+ #include <isc/util.h>
++#include <txc.h>
+ 
+ typedef struct resulttable {
+ 	unsigned int				base;
+@@ -106,7 +107,6 @@
+ 
+ static isc_once_t 				once = ISC_ONCE_INIT;
+ static ISC_LIST(resulttable)			tables;
+-static isc_mutex_t				lock;
+ 
+ static isc_result_t
+ register_table(unsigned int base, unsigned int nresults, const char **text,
+@@ -132,11 +132,11 @@
+ 	table->set = set;
+ 	ISC_LINK_INIT(table, link);
+ 
+-	LOCK(&lock);
++	XACT_BEGIN(lock);
+ 
+-	ISC_LIST_APPEND(tables, table, link);
++		ISC_LIST_APPEND(tables, table, link);
+ 
+-	UNLOCK(&lock);
++	XACT_END(lock);
+ 
+ 	return (ISC_R_SUCCESS);
+ }
+@@ -145,7 +145,6 @@
+ initialize_action(void) {
+ 	isc_result_t result;
+ 
+-	RUNTIME_CHECK(isc_mutex_init(&lock) == ISC_R_SUCCESS);
+ 	ISC_LIST_INIT(tables);
+ 
+ 	result = register_table(ISC_RESULTCLASS_ISC, ISC_R_NRESULTS, text,
+@@ -164,6 +163,7 @@
+ 	RUNTIME_CHECK(isc_once_do(&once, initialize_action) == ISC_R_SUCCESS);
+ }
+ 
++TM_CALLABLE
+ const char *
+ isc_result_totext(isc_result_t result) {
+ 	resulttable *table;
+@@ -172,30 +172,30 @@
+ 
+ 	initialize();
+ 
+-	LOCK(&lock);
++	XACT_BEGIN(lock);
+ 
+-	text = NULL;
+-	for (table = ISC_LIST_HEAD(tables);
+-	     table != NULL;
+-	     table = ISC_LIST_NEXT(table, link)) {
+-		if (result >= table->base && result <= table->last) {
+-			index = (int)(result - table->base);
+-			default_text = table->text[index];
+-			/*
+-			 * Note: we use 'index + 1' as the message number
+-			 * instead of index because isc_msgcat_get() requires
+-			 * the message number to be > 0.
+-			 */
+-			text = isc_msgcat_get(table->msgcat, table->set,
+-					      index + 1, default_text);
+-			break;
++		text = NULL;
++		for (table = ISC_LIST_HEAD(tables);
++		     table != NULL;
++		     table = ISC_LIST_NEXT(table, link)) {
++			if (result >= table->base && result <= table->last) {
++				index = (int)(result - table->base);
++				default_text = table->text[index];
++				/*
++				 * Note: we use 'index + 1' as the message number
++				 * instead of index because isc_msgcat_get() requires
++				 * the message number to be > 0.
++				 */
++				text = isc_msgcat_get(table->msgcat, table->set,
++						      index + 1, default_text);
++				break;
++			}
+ 		}
+-	}
+-	if (text == NULL)
+-		text = isc_msgcat_get(isc_msgcat, ISC_RESULT_UNAVAILABLESET,
+-				      1, "(result code text not available)");
++		if (text == NULL)
++			text = isc_msgcat_get(isc_msgcat, ISC_RESULT_UNAVAILABLESET,
++					      1, "(result code text not available)");
+ 
+-	UNLOCK(&lock);
++	XACT_END(lock);
+ 
+ 	return (text);
+ }
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/unix/Makefile.in changed/lib/isc/unix/Makefile.in
+--- bind-9.3.5-P2/lib/isc/unix/Makefile.in	2008-10-28 00:33:21.000000000 -0500
++++ changed/lib/isc/unix/Makefile.in	2008-10-28 00:30:19.000000000 -0500
+@@ -21,7 +21,6 @@
+ 
+ CINCLUDES =	-I${srcdir}/include \
+ 		-I${srcdir}/../@ISC_THREAD_DIR@/include \
+-		-I$(PWD)/../../../../xCalls/src/include \
+ 		-I../include \
+ 		-I${srcdir}/../include \
+ 		-I${srcdir}/..
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/unix/errno2result.c changed/lib/isc/unix/errno2result.c
+--- bind-9.3.5-P2/lib/isc/unix/errno2result.c	2007-08-28 02:19:17.000000000 -0500
++++ changed/lib/isc/unix/errno2result.c	2008-10-27 23:47:22.000000000 -0500
+@@ -31,6 +31,7 @@
+  * of this function should add any expected errors that are
+  * not already there.
+  */
++TM_WAIVER
+ isc_result_t
+ isc__errno2result(int posixerrno) {
+ 	char strbuf[ISC_STRERRORSIZE];
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/unix/errno2result.h changed/lib/isc/unix/errno2result.h
+--- bind-9.3.5-P2/lib/isc/unix/errno2result.h	2004-03-06 02:14:59.000000000 -0600
++++ changed/lib/isc/unix/errno2result.h	2008-10-27 23:39:03.000000000 -0500
+@@ -29,6 +29,7 @@
+ 
+ ISC_LANG_BEGINDECLS
+ 
++TM_WAIVER
+ isc_result_t
+ isc__errno2result(int posixerrno);
+ 
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/unix/include/isc/dir.h changed/lib/isc/unix/include/isc/dir.h
+--- bind-9.3.5-P2/lib/isc/unix/include/isc/dir.h	2007-08-28 02:19:17.000000000 -0500
++++ changed/lib/isc/unix/include/isc/dir.h	2008-10-27 23:52:07.000000000 -0500
+@@ -58,6 +58,7 @@
+ void
+ isc_dir_init(isc_dir_t *dir);
+ 
++__attribute__((tm_unknown))
+ isc_result_t
+ isc_dir_open(isc_dir_t *dir, const char *dirname);
+ 
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/unix/include/isc/strerror.h changed/lib/isc/unix/include/isc/strerror.h
+--- bind-9.3.5-P2/lib/isc/unix/include/isc/strerror.h	2007-08-28 02:19:17.000000000 -0500
++++ changed/lib/isc/unix/include/isc/strerror.h	2008-10-27 20:38:09.000000000 -0500
+@@ -34,6 +34,7 @@
+  * Requires:
+  * 	'buf' to be non NULL.
+  */
++TM_CALLABLE
+ void
+ isc__strerror(int num, char *buf, size_t bufsize);
+ 
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/unix/include/isc/time.h changed/lib/isc/unix/include/isc/time.h
+--- bind-9.3.5-P2/lib/isc/unix/include/isc/time.h	2007-08-28 02:19:17.000000000 -0500
++++ changed/lib/isc/unix/include/isc/time.h	2008-10-27 23:29:41.000000000 -0500
+@@ -42,6 +42,7 @@
+ 
+ ISC_LANG_BEGINDECLS
+ 
++TM_WAIVER
+ void
+ isc_interval_set(isc_interval_t *i,
+ 		 unsigned int seconds, unsigned int nanoseconds);
+@@ -124,6 +125,7 @@
+  *	't' is a valid pointer.
+  */
+ 
++TM_CALLABLE
+ isc_result_t
+ isc_time_now(isc_time_t *t);
+ /*
+@@ -168,6 +170,7 @@
+  *		be represented in the current definition of isc_time_t.
+  */
+ 
++TM_WAIVER
+ int
+ isc_time_compare(const isc_time_t *t1, const isc_time_t *t2);
+ /*
+@@ -200,6 +203,7 @@
+  *		be represented in the current definition of isc_time_t.
+  */
+ 
++TM_CALLABLE
+ isc_result_t
+ isc_time_subtract(const isc_time_t *t, const isc_interval_t *i,
+ 		  isc_time_t *result);
+@@ -280,6 +284,7 @@
+  *	The returned value is less than 1*10^9.
+  */
+ 
++TM_WAIVER
+ void
+ isc_time_formattimestamp(const isc_time_t *t, char *buf, unsigned int len);
+ /*
+diff -Naur -x '._*' -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' old/lib/isc/unix/strerror.c bind-9.3.5-P2/lib/isc/unix/strerror.c
+--- old/lib/isc/unix/strerror.c	2007-08-28 02:19:17.000000000 -0500
++++ bind-9.3.5-P2/lib/isc/unix/strerror.c	2008-10-28 17:19:30.000000000 -0500
+@@ -27,38 +27,32 @@
+ #include <isc/print.h>
+ #include <isc/strerror.h>
+ #include <isc/util.h>
++#include <txc.h>
+
+ #ifdef HAVE_STRERROR
+-/*
+- * We need to do this this way for profiled locks.
+- */
+-static isc_mutex_t isc_strerror_lock;
+-static void init_lock(void) {
+-	RUNTIME_CHECK(isc_mutex_init(&isc_strerror_lock) == ISC_R_SUCCESS);
+-}
++
+ #else
+ extern const char * const sys_errlist[];
+ extern const int sys_nerr;
+ #endif
++static isc_once_t once = ISC_ONCE_INIT;
+
++TM_CALLABLE
+ void
+ isc__strerror(int num, char *buf, size_t size) {
+ #ifdef HAVE_STRERROR
+ 	char *msg;
+ 	unsigned int unum = num;
+-	static isc_once_t once = ISC_ONCE_INIT;
+
+ 	REQUIRE(buf != NULL);
+
+-	RUNTIME_CHECK(isc_once_do(&once, init_lock) == ISC_R_SUCCESS);
+-
+-	LOCK(&isc_strerror_lock);
+-	msg = strerror(num);
+-	if (msg != NULL)
+-		snprintf(buf, size, "%s", msg);
+-	else
+-		snprintf(buf, size, "Unknown error: %u", unum);
+-	UNLOCK(&isc_strerror_lock);
++	XACT_BEGIN(isc_strerror_lock);
++		msg = txc_strerror(num);
++		if (msg != NULL)
++			txc_snprintf(buf, size, "%s", msg);
++		else
++			txc_snprintf(buf, size, "Unknown error: %u", unum);
++	XACT_END(isc_strerror_lock);
+ #else
+ 	unsigned int unum = num;
+
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/unix/time.c changed/lib/isc/unix/time.c
+--- bind-9.3.5-P2/lib/isc/unix/time.c	2004-03-06 02:15:03.000000000 -0600
++++ changed/lib/isc/unix/time.c	2008-10-27 23:29:51.000000000 -0500
+@@ -56,6 +56,7 @@
+ isc_interval_t *isc_interval_zero = &zero_interval;
+ 
+ #if ISC_FIX_TV_USEC
++TM_WAIVER
+ static inline void
+ fix_tv_usec(struct timeval *tv) {
+ 	isc_boolean_t fixed = ISC_FALSE;
+@@ -76,11 +77,13 @@
+ 	/*
+ 	 * Call syslog directly as was are called from the logging functions.
+ 	 */
+-	if (fixed)
+-		(void)syslog(LOG_ERR, "gettimeofday returned bad tv_usec: corrected");
++	// EDIT: This basically never happens...
++	//if (fixed)
++		// (void)syslog(LOG_ERR, "gettimeofday returned bad tv_usec: corrected");
+ }
+ #endif
+ 
++TM_WAIVER
+ void
+ isc_interval_set(isc_interval_t *i,
+ 		 unsigned int seconds, unsigned int nanoseconds)
+@@ -140,6 +143,11 @@
+ }
+ 
+ 
++TM_WAIVER
++int
++gettimeofday(struct timeval* tp, void* tzp);
++
++TM_CALLABLE
+ isc_result_t
+ isc_time_now(isc_time_t *t) {
+ 	struct timeval tv;
+@@ -233,6 +241,7 @@
+ 	return (ISC_R_SUCCESS);
+ }
+ 
++TM_WAIVER
+ int
+ isc_time_compare(const isc_time_t *t1, const isc_time_t *t2) {
+ 	REQUIRE(t1 != NULL && t2 != NULL);
+@@ -275,6 +284,7 @@
+ 	return (ISC_R_SUCCESS);
+ }
+ 
++TM_CALLABLE
+ isc_result_t
+ isc_time_subtract(const isc_time_t *t, const isc_interval_t *i,
+ 		  isc_time_t *result)
+@@ -394,6 +404,10 @@
+ 	return ((isc_uint32_t)t->nanoseconds);
+ }
+ 
++TM_WAIVER
++size_t strftime(char*, size_t, const char*, const struct tm*);
++
++TM_WAIVER
+ void
+ isc_time_formattimestamp(const isc_time_t *t, char *buf, unsigned int len) {
+ 	time_t now;
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/win32/include/isc/time.h changed/lib/isc/win32/include/isc/time.h
+--- bind-9.3.5-P2/lib/isc/win32/include/isc/time.h	2007-08-28 02:19:17.000000000 -0500
++++ changed/lib/isc/win32/include/isc/time.h	2008-10-27 12:15:31.000000000 -0500
+@@ -43,6 +43,7 @@
+ 
+ ISC_LANG_BEGINDECLS
+ 
++TM_WAIVER
+ void
+ isc_interval_set(isc_interval_t *i,
+ 		 unsigned int seconds, unsigned int nanoseconds);
+@@ -151,6 +152,7 @@
+  *		be represented in the current definition of isc_time_t.
+  */
+ 
++TM_WAIVER
+ int
+ isc_time_compare(const isc_time_t *t1, const isc_time_t *t2);
+ /*
+@@ -183,6 +185,7 @@
+  *		be represented in the current definition of isc_time_t.
+  */
+ 
++TM_WAIVER
+ isc_result_t
+ isc_time_subtract(const isc_time_t *t, const isc_interval_t *i,
+ 		  isc_time_t *result);
+
+diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/mem.c changed/lib/isc/mem.c

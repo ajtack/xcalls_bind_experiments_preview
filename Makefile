@@ -6,12 +6,15 @@
 
 CC = icc
 CFLAGS += \
+	-g \
 	-Qtm_enabled \
+	-D_GNU_SOURCE \
 	-DTM_CALLABLE=\"__attribute__((tm_callable))\" \
 	-DTM_WAIVER=\"__attribute__((tm_pure))\" \
-	
+	-DTXC_XCALLS_ENABLE \
+
 LIBS += \
-	$(PWD)/xCalls/build/libtxc.a
+	$(PWD)/xCalls/build/libtxc.a \
 	
 CONFIGURE_OPTIONS = --enable-threads --with-openssl=no
 BIND_DIRECTORY = bind-9.3.5-P2
