@@ -10,14 +10,14 @@ Help(opts.GenerateHelpText(env))
 env['CC'] = '/u/t/a/tack/installed/intel/cc/10.0.506/bin/icc'
 env['CCFLAGS'] = '-Qtm_enabled'
 env.Append(CCFLAGS = 	' -D_REENTRANT -D_GNU_SOURCE' + \
-								 			' -DTM_CALLABLE="__attribute__ ((tm_callable))" -DTM_WAIVER="__attribute__ ((tm_pure))"')
+								 			' -DTM_CALLABLE="__attribute__ ((tm_callable))" -DTM_WAIVER="__attribute__ ((tm_pure))" -fno-builtin-tolower' )
 
 testenv = env.Clone()
 
 env.Append(CCFLAGS = 	' -Wall -Wmissing-prototypes -Wcast-qual -Wwrite-strings -Wformat -Wpointer-arith')
 
 if env['mode'] == 'debug':
-	env.Append(CCFLAGS = ' -g -O0')
+	env.Append(CCFLAGS = ' -g -O2')
 elif env['mode'] == 'release':
 	env.Append(CCFLAGS = ' -O2')
 

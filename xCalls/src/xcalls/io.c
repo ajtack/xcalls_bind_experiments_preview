@@ -14,20 +14,120 @@ TM_WAIVER ssize_t __read(int fd, void *buf, size_t count);
 TM_WAIVER ssize_t __write(int fd, const void *buf, size_t count);
 TM_WAIVER off_t __lseek(int fildes, off_t offset, int whence);
 TM_WAIVER int __close(int fd);
+TM_WAIVER int stat(const char *path, struct stat *buf); 
 
 TM_WAIVER int printf(const char *format, ...);
 
-TM_WAIVER 
-int 
-txc_fsync(int fd) {
-	return fsync(fd);
+
+/* Defer close() until commit */
+txc_result_t
+txc_fsync_commit(unsigned int num_inputs, unsigned int* input_array)
+{
+	int fildes = (int) input_array[0];
+
+	fsync(fildes);
 }
+
 
 TM_WAIVER 
 int 
-txc_fdatasync(int fd) {
-	return fsync(fd);
+txc_fsync(int fildes) {
+	int dummy;	
+	txc_koa_t *koa;	
+	int ret;
+	txc_sentinel_t *sentinel;	
+	unsigned int args_array[6];
+
+	switch(txc_transaction_xact_state_get()) {
+		case TXC_XACT_STATE_NON_TRANSACTIONAL:
+			if (txc_koa_get(txc_transactionmgr->koamgr, &koa, fildes) 
+																													!= TXC_R_SUCCESS) {
+				assert(0);		
+			}
+			SENTINEL_ACQUIRE_SHARED(sentinel = koa->sentinel);
+			ret = fsync(fildes);
+			SENTINEL_RELEASE(sentinel);
+			break;
+		case TXC_XACT_STATE_RUNNING_SPECULATIVE:
+			if (txc_koa_get(txc_transactionmgr->koamgr, &koa, fildes) 
+																													!= TXC_R_SUCCESS) {
+				assert(0);		
+			}
+			SENTINEL_ACQUIRE_EXCLUSIVE(koa->sentinel);
+			args_array[0] = (unsigned int) fildes;
+			txc_register_commit_action(txc_fsync_commit, 1, args_array);
+			ret = 0;
+			break;
+		case TXC_XACT_STATE_RUNNING_IRREVOCABLE:
+			if (txc_koa_get(txc_transactionmgr->koamgr, &koa, fildes) 
+																													!= TXC_R_SUCCESS) {
+				assert(0);		
+			}
+			SENTINEL_ACQUIRE_EXCLUSIVE(koa->sentinel);
+			ret = fsync(fildes);	
+			break;
+		default:
+			assert(0);
+	}
+
+	return ret;
 }
+
+
+/* Defer close() until commit */
+txc_result_t
+txc_fdatasync_commit(unsigned int num_inputs, unsigned int* input_array)
+{
+	int fildes = (int) input_array[0];
+
+	fdatasync(fildes);
+}
+
+
+TM_WAIVER 
+int 
+txc_fdatasync(int fildes) {
+	int dummy;	
+	txc_koa_t *koa;	
+	int ret;
+	txc_sentinel_t *sentinel;	
+	unsigned int args_array[6];
+
+	switch(txc_transaction_xact_state_get()) {
+		case TXC_XACT_STATE_NON_TRANSACTIONAL:
+			if (txc_koa_get(txc_transactionmgr->koamgr, &koa, fildes) 
+																													!= TXC_R_SUCCESS) {
+				assert(0);		
+			}
+			SENTINEL_ACQUIRE_SHARED(sentinel = koa->sentinel);
+			ret = fdatasync(fildes);
+			SENTINEL_RELEASE(sentinel);
+			break;
+		case TXC_XACT_STATE_RUNNING_SPECULATIVE:
+			if (txc_koa_get(txc_transactionmgr->koamgr, &koa, fildes) 
+																													!= TXC_R_SUCCESS) {
+				assert(0);		
+			}
+			SENTINEL_ACQUIRE_EXCLUSIVE(koa->sentinel);
+			args_array[0] = (unsigned int) fildes;
+			txc_register_commit_action(txc_fdatasync_commit, 1, args_array);
+			ret = 0;
+			break;
+		case TXC_XACT_STATE_RUNNING_IRREVOCABLE:
+			if (txc_koa_get(txc_transactionmgr->koamgr, &koa, fildes) 
+																													!= TXC_R_SUCCESS) {
+				assert(0);		
+			}
+			SENTINEL_ACQUIRE_EXCLUSIVE(koa->sentinel);
+			ret = fdatasync(fildes);	
+			break;
+		default:
+			assert(0);
+	}
+
+	return ret;
+}
+
 
 /* int __open(const char *pathname, int flags, mode_t mode); */
 
@@ -1086,6 +1186,12 @@ txc_lseek_compensation_case(unsigned int num_inputs, unsigned int* input_array)
     __lseek(fildes, old_position, SEEK_SET);
 }
 
+TM_WAIVER
+int
+txc_stat(const char *path, struct stat *buf) 
+{
+	return stat(path, buf);
+}
 
 TM_WAIVER
 int

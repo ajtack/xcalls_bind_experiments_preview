@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <sys/socket.h>
+typedef long long off64_t;
 
 /* Constant definitions */
 
@@ -36,6 +37,7 @@ TM_WAIVER int txc_fcntl(int fd, int cmd, long arg);
 TM_WAIVER int txc_fsync(int fd);
 TM_WAIVER int txc_fdatasync(int fd);
 TM_CALLABLE int txc_mkdir(const char *pathname, mode_t mode);
+TM_WAIVER int txc_stat(const char *path, struct stat *buf); 
 
 /* stdio */
 #if 0

@@ -1,3 +1,38 @@
+diff -Naur -x '._*' -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' bind-9.3.5-P2/bin/named/Makefile.in changed/bin/named/Makefile.in 
+--- bind-9.3.5-P2/bin/named/Makefile.in	2007-08-28 02:19:08.000000000 -0500
++++ changed/bin/named/Makefile.in	2008-10-28 16:23:59.000000000 -0500
+@@ -34,7 +34,8 @@
+ CINCLUDES =	-I${srcdir}/include -I${srcdir}/unix/include \
+ 		${LWRES_INCLUDES} ${DNS_INCLUDES} ${BIND9_INCLUDES} \
+ 		${ISCCFG_INCLUDES} ${ISCCC_INCLUDES} ${ISC_INCLUDES} \
+-		${DBDRIVER_INCLUDES}
++		${DBDRIVER_INCLUDES} \
++		-I$(PWD)/../../../xCalls/src/include \
+ 
+ CDEFINES =
+ CWARNINGS =
+diff -Naur -x '._*' -x 'Makefile' -x '*.i' -x '*~' -x 'make' -x '*.log' -x 'doc' -x 'contrib' -x 'tests' -x 'config.h' -x 'config.status' -x 'isc-config.h' -x '*.kdev*' -x 'platform.h' -x 'netdb.h' -x 'Doxyfile' -x 'port_*.h' bind-9.3.5-P2/lib/isc/pthreads/Makefile.in changed/lib/isc/pthreads/Makefile.in
+--- bind-9.3.5-P2/lib/isc/pthreads/Makefile.in	2004-03-06 02:14:53.000000000 -0600
++++ changed/lib/isc/pthreads/Makefile.in	2008-10-28 12:13:38.000000000 -0500
+@@ -21,6 +21,7 @@
+ 
+ CINCLUDES =	-I${srcdir}/include \
+ 		-I${srcdir}/../unix/include \
++		-I$(PWD)/../../../../xCalls/src/include \
+ 		-I../include \
+ 		-I${srcdir}/../include \
+ 		-I${srcdir}/..
+diff -Naur -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/unix/Makefile.in changed/lib/isc/unix/Makefile.in
+--- bind-9.3.5-P2/lib/isc/unix/Makefile.in	2007-08-28 02:19:17.000000000 -0500
++++ changed/lib/isc/unix/Makefile.in	2008-10-27 21:03:44.000000000 -0500
+@@ -21,6 +21,7 @@
+ 
+ CINCLUDES =	-I${srcdir}/include \
+ 		-I${srcdir}/../@ISC_THREAD_DIR@/include \
++		-I$(PWD)/../../../../xCalls/src/include \
+ 		-I../include \
+ 		-I${srcdir}/../include \
+ 		-I${srcdir}/..
 diff -Naur -x '*.i' -x '*~' -x make -x '*.log' -x doc -x contrib -x tests -x config.h -x config.status -x isc-config.h -x '*.kdev*' -x platform.h -x netdb.h -x Doxyfile -x 'port_*.h' bind-9.3.5-P2/lib/isc/Makefile.in changed/lib/isc/Makefile.in
 --- bind-9.3.5-P2/lib/isc/Makefile.in	2004-07-20 02:01:58.000000000 -0500
 +++ changed/lib/isc/Makefile.in	2008-10-22 13:03:59.000000000 -0500

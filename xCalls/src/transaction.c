@@ -214,18 +214,21 @@ void
 register_generic_actions(txc_xact_descriptor_t *desc)
 {
 	if (desc->generic_actions_registered == 0) {
-		//FIXME: When transitioning to irrevocable mode, the TM system executes 
-		// any registered commit actions. As a result the TM system will execute
-		// the generic commit action. This has a lot of problems, e.g. don't
-		// release sentinels at commit, etc.
-		// For now we execute commit actions by glueing code at the end of the
-		// atomic construct but this has the disadvantage that the exit point
-		// must be the end of the transaction (no gotos, no returns, etc)    
-		// A better solution is to use the Obstinate mode instead of the 
-		// irrevocable mode or modify the glock mode in the STM (sources???)  
+		/* FIXME: When transitioning to irrevocable mode, the TM system executes 
+		 * any registered commit actions. As a result the TM system will execute
+		 * the generic commit action. This has a lot of problems, e.g. don't
+		 * release sentinels at commit, etc.
+		 * For now we execute commit actions by glueing code at the end of the
+		 * atomic construct but this has the disadvantage that the exit point
+		 * must be the end of the transaction (no gotos, no returns, etc)    
+		 * A better solution is to use the Obstinate mode instead of the 
+		 * irrevocable mode or modify the glock mode in the STM (sources???)  
+		 *
+		 *
+		 *	_ITM_addUserCommitAction(_ITM_getTransaction(), 
+		 *																	txc_generic_commit_action, 1, NULL);	
+		 */
 
-//		_ITM_addUserCommitAction(_ITM_getTransaction(), 
-//																		txc_generic_commit_action, 1, NULL);	
 		_ITM_addUserUndoAction(_ITM_getTransaction(),
 																		txc_generic_compensating_action, NULL);
 		desc->generic_actions_registered = 1;
@@ -249,17 +252,21 @@ txc_register_commit_action(
 				unsigned int *arg_list) {
 	int j, index;
 
-	assert(txc_xact_descriptor != NULL);
-	register_generic_actions(txc_xact_descriptor);
-	if (txc_xact_descriptor->transaction_log[0].xact_frame.has_commit_actions == 0) {
-		txc_xact_descriptor->transaction_log[0].xact_frame.has_commit_actions = 1; 
-	} 
-	index = txc_xact_descriptor->transaction_log_len++;
-	txc_xact_descriptor->transaction_log[index].type = TXC_LOG_RECORD_COMMIT_ACTION;
-	txc_xact_descriptor->transaction_log[index].commit_action.action = action;
-	txc_xact_descriptor->transaction_log[index].commit_action.num_args = num_args;
-	for (j=0; j<num_args; j++) {
-		txc_xact_descriptor->transaction_log[index].commit_action.arg_list[j] = arg_list[j];
+	if (_ITM_inTransaction(_ITM_getTransaction()) > 0) {
+		assert(txc_xact_descriptor != NULL);
+		register_generic_actions(txc_xact_descriptor);
+		if (txc_xact_descriptor->transaction_log[0].xact_frame.has_commit_actions == 0) {
+			txc_xact_descriptor->transaction_log[0].xact_frame.has_commit_actions = 1; 
+		} 
+		index = txc_xact_descriptor->transaction_log_len++;
+		txc_xact_descriptor->transaction_log[index].type = TXC_LOG_RECORD_COMMIT_ACTION;
+		txc_xact_descriptor->transaction_log[index].commit_action.action = action;
+		txc_xact_descriptor->transaction_log[index].commit_action.num_args = num_args;
+		for (j=0; j<num_args; j++) {
+			txc_xact_descriptor->transaction_log[index].commit_action.arg_list[j] = arg_list[j];
+		}
+	} else {
+		action(num_args, arg_list);
 	}
 }
 
@@ -271,19 +278,21 @@ txc_register_compensating_action(
 				unsigned int *arg_list) {
 	int j, index;
 
-	assert(txc_xact_descriptor != NULL);
-	register_generic_actions(txc_xact_descriptor);
-	if (txc_xact_descriptor->
-						transaction_log[0].xact_frame.has_compensating_actions == 0) {
-		txc_xact_descriptor->
-						transaction_log[0].xact_frame.has_compensating_actions = 1; 
-	} 
-	index = txc_xact_descriptor->transaction_log_len++;
-	txc_xact_descriptor->transaction_log[index].type = TXC_LOG_RECORD_COMPENSATING_ACTION;
-	txc_xact_descriptor->transaction_log[index].compensating_action.action = action;
-	txc_xact_descriptor->transaction_log[index].compensating_action.num_args = num_args;
-	for (j=0; j<num_args; j++) {
-		txc_xact_descriptor->transaction_log[index].compensating_action.arg_list[j] = arg_list[j];
+	if (_ITM_inTransaction(_ITM_getTransaction()) > 0) {
+		assert(txc_xact_descriptor != NULL);
+		register_generic_actions(txc_xact_descriptor);
+		if (txc_xact_descriptor->
+							transaction_log[0].xact_frame.has_compensating_actions == 0) {
+			txc_xact_descriptor->
+							transaction_log[0].xact_frame.has_compensating_actions = 1; 
+		} 
+		index = txc_xact_descriptor->transaction_log_len++;
+		txc_xact_descriptor->transaction_log[index].type = TXC_LOG_RECORD_COMPENSATING_ACTION;
+		txc_xact_descriptor->transaction_log[index].compensating_action.action = action;
+		txc_xact_descriptor->transaction_log[index].compensating_action.num_args = num_args;
+		for (j=0; j<num_args; j++) {
+			txc_xact_descriptor->transaction_log[index].compensating_action.arg_list[j] = arg_list[j];
+		}
 	}
 }
 

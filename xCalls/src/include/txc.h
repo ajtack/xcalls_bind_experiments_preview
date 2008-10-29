@@ -105,8 +105,7 @@ do {																																		\
 		TXC_STAT_CALL_EVENT_PROBE(XACTSTAT, END, NULL, NULL)										\
 		TXC_STAT_PROBE_KEY_RESET(XACTSTAT);																			\
 		txc_generic_commit_action(NULL);																				\
-	}																																					\
-	TXC_GLOBLOG("XACT END(" #tag ")");																			
+	}	
 
 
 #else	/* ! TXC_XCALLS_ENABLE */
