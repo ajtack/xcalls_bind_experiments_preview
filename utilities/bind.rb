@@ -22,6 +22,7 @@ def killBind
 	bindPid = File.new("zones/named.pid").read.to_i
 	$stderr.puts "Killing BIND @ #{bindPid}..."
 	
+	
 	Process.kill('INT', bindPid)
 	
 	bindPid

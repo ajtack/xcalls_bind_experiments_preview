@@ -28,7 +28,7 @@ Dir.open(PatchesDir) do |PatchDir|
 	system("make --no-print-directory restore")
 	results = Hash.new
 	lastPatchWasLogged = false
-	patches.each do |patchName|
+	patches.sort.each do |patchName|
 		results[patchName] = Hash.new
 
 		buildCommand = 'make -s --no-print-directory build_named'

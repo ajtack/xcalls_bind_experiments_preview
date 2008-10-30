@@ -489,7 +489,7 @@ diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x co
 -	result = isc_stdio_open(path, "a", &FILE_STREAM(channel));
 +	{
 +		int fd;
-+		fd = txc_open(path, O_APPEND, 0);
++		fd = txc_open(path, O_CREAT | O_APPEND | O_WRONLY, 0777);
 +		if (fd < 0)	{
 +			result = isc__errno2result(errno);
 +		} else {
