@@ -95,6 +95,7 @@ end
 stats = TransactionStatistics.new
 Repetitions.times do |repNumber|
 	$stderr.puts "Running transaction-statistic measurement exercise #{repNumber} ..."
+	File.delete("zones/itm.log")
 	IO.popen("-", "r+") do |pipe|
 		if pipe.nil?
 			startBind(Logged) do |bindIn, bindOut, bindErr|
@@ -111,7 +112,7 @@ Repetitions.times do |repNumber|
 
 			# Run queryperf against BIND!
 			IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
-			         "-p #{Port} -q 400 -d #{ExperimentsRoot}/queries.dat", "r") do |queryperfStdio|
+			         "-p #{Port} -q 400 -d #{ExperimentsRoot}/queries.dat -l 20", "r") do |queryperfStdio|
 				$stderr.puts "Started queryperf!"
 				$stderr.puts "Waiting for queryperf to finish..."
 				queryperfStdio.readlines
@@ -127,11 +128,11 @@ Repetitions.times do |repNumber|
 			end
 			logFile = File.open("zones/itm.log", "r")
 			line = logFile.readlines
-			File.delete("zones/itm.log")
 
 			thisEntry = Hash.new
 			line.count.downto 0 do |lineNumber|
 				thisLine = line[lineNumber - 1]
+				$stderr.puts thisLine
 				piece = thisLine.split
 
 				if piece[0] == ':'  # line below "GRAND TOTAL ..."
@@ -140,7 +141,6 @@ Repetitions.times do |repNumber|
 					thisEntry.merge!(pieceHash(piece))
 				end
 			end
-			$stderr.puts thisEntry
 
 			stats.record(thisEntry)
 		end
