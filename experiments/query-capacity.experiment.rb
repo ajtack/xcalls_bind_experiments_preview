@@ -34,7 +34,7 @@ IO.popen('-') do |pipe|
 		totalQps = 0
 		Repetitions.times do |repNumber|
 			IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
-			         "-p #{Port} -d #{ExperimentsRoot}/queries.dat -q 400 -l 20")                do |result|
+			         "-p #{Port} -d #{ExperimentsRoot}/queries.dat -q 400")                do |result|
 				$stderr.puts "Running Queryperf excercise #{repNumber} ..."
 				qps = result.readlines[-2].split[3].to_i
 				totalQps += qps

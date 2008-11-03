@@ -1079,7 +1079,7 @@ diff -Naur -x '._*' -x Makefile -x '*.i' -x '*~' -x make -x '*.log' -x doc -x co
 -		UNLOCK(&mctx->lock);
 +			XACT_BEGIN(lock2)
 +				mem_putunlocked(mctx, mem, mpctx->size);
-+			UNLOCK(lock2)
++			XACT_END(lock2)
  #else /* ISC_MEM_USE_INTERNAL_MALLOC */
 -		mem_put(mctx, mem, mpctx->size);
 -		LOCK(&mctx->lock);

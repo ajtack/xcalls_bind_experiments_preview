@@ -95,7 +95,9 @@ end
 stats = TransactionStatistics.new
 Repetitions.times do |repNumber|
 	$stderr.puts "Running transaction-statistic measurement exercise #{repNumber} ..."
-	File.delete("zones/itm.log")
+	if File.exist?('zones/itm.log')
+		File.delete('zones/itm.log')
+	end
 	IO.popen("-", "r+") do |pipe|
 		if pipe.nil?
 			startBind(Logged) do |bindIn, bindOut, bindErr|
@@ -112,7 +114,7 @@ Repetitions.times do |repNumber|
 
 			# Run queryperf against BIND!
 			IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
-			         "-p #{Port} -q 400 -d #{ExperimentsRoot}/queries.dat -l 20", "r") do |queryperfStdio|
+			         "-p #{Port} -q 400 -d #{ExperimentsRoot}/queries.dat", "r") do |queryperfStdio|
 				$stderr.puts "Started queryperf!"
 				$stderr.puts "Waiting for queryperf to finish..."
 				queryperfStdio.readlines
