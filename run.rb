@@ -14,6 +14,8 @@ PatchesDir     = if ARGV[2][-1..-1] == '/'
                  then ARGV[2][0..-2]
 		           else ARGV[2] end
 
+require 'fileutils'
+
 Dir.open(PatchesDir) do |PatchDir|
 	patches = PatchDir.collect do |fileName|
 		if fileName.split('.').last == 'patch' and not fileName[0,1] == '.'
@@ -57,6 +59,10 @@ Dir.open(PatchesDir) do |PatchDir|
 					end
 					IO.popen(experimentCommand) do |experimentOutput|
 						results[patchName][experimentName] = experimentOutput.read
+						if File.exist?('zones/itm.log')
+							FileUtils::mkdir_p("results/#{experimentName}")
+							FileUtils::copy('zones/itm.log', "results/#{experimentName}/#{patchName}.itm.log")
+						end
 					end
 				end
 			end

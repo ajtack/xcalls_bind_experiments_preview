@@ -12,9 +12,11 @@ CFLAGS += \
 	-DTM_CALLABLE=\"__attribute__((tm_callable))\" \
 	-DTM_WAIVER=\"__attribute__((tm_pure))\" \
 	-DTXC_XCALLS_ENABLE \
+	-DISC_MEM_USE_INTERNAL_MALLOC=1 \
+	-DISC_MUTEX_PROFILE=1
 
 LIBS += \
-	$(PWD)/xCalls/build/libtxc.a \
+	$(PWD)/xCalls/src/libtxc.a \
 	
 CONFIGURE_OPTIONS = --enable-threads --with-openssl=no
 BIND_DIRECTORY = bind-9.3.5-P2
@@ -24,7 +26,7 @@ EXPERIMENTS_DIRECTORY = experiments
 .PHONY: default_target
 default_target: experiments
 
-xCalls/build/libtxc.a:
+xCalls/src/libtxc.a:
 	@echo "Building XCalls ..."
 	@export CC=`which icc` && \
 		scons -C xCalls linkage=static
@@ -56,7 +58,7 @@ $(BIND_DIRECTORY).tar.gz:
 	@echo "Downloading $@ ..."
 	@curl -s http://ftp.isc.org/isc/bind9/9.3.5-P2/bind-9.3.5-P2.tar.gz > $@
 
-$(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz xCalls/build/libtxc.a
+$(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz xCalls/src/libtxc.a
 	@echo "Unarchiving Vanilla BIND ..."
 	@tar xzf $<
 	@echo "Configuring BIND ..."
