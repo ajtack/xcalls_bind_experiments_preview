@@ -16,67 +16,69 @@ PatchesDir     = if ARGV[2][-1..-1] == '/'
 
 require 'fileutils'
 
-Dir.open(PatchesDir) do |PatchDir|
-	patches = PatchDir.collect do |fileName|
-		if fileName.split('.').last == 'patch' and not fileName[0,1] == '.'
-			fileName
-		else
-			nil
+NumberOfCpusToUse = [7, 3]
+
+NumberOfCpusToUse.each do |cpuCount|
+	Dir.open(PatchesDir) do |PatchDir|
+		patches = PatchDir.collect do |fileName|
+			if fileName.split('.').last == 'patch' and not fileName[0,1] == '.'
+				fileName
+			else
+				nil
+			end
 		end
-	end
-	patches.compact!
+		patches.compact!
 
-	# Restore vanilla BIND, run patches.
-	system("make --no-print-directory restore")
-	results = Hash.new
-	lastPatchWasLogged = false
-	patches.sort.each do |patchName|
-		results[patchName] = Hash.new
+		# Restore vanilla BIND, run patches.
+		system("make --no-print-directory restore")
+		results = Hash.new
+		lastPatchWasLogged = false
+		patches.sort.each do |patchName|
+			results[patchName] = Hash.new
 
-		buildCommand = 'make -s --no-print-directory build_named'
-		isLoggedPatch = (patchName =~ /.+\.logged\.patch/)
+			buildCommand = 'make -s --no-print-directory build_named'
+			isLoggedPatch = (patchName =~ /.+\.logged\.patch/)
 		
-		# Apply patch
-		system("patch -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
+			# Apply patch
+			system("patch -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
 
-		if system(buildCommand)
-			Dir.open(ExperimentsDir) do |experimentDir|
-				experiments = experimentDir.collect do |fileName|
-					if fileName =~ /.+\.experiment\.rb/ and not fileName[0,1] == '.'
-						fileName
-					else
-						nil
+			if system(buildCommand)
+				Dir.open(ExperimentsDir) do |experimentDir|
+					experiments = experimentDir.collect do |fileName|
+						if fileName =~ /.+\.experiment\.rb/ and not fileName[0,1] == '.'
+							fileName
+						else
+							nil
+						end
 					end
-				end
-				experiments.compact!
+					experiments.compact!
 
-				puts "Running against patch #{patchName} ..."
-				experiments.each do |experimentName|
-					experimentName = ExperimentsDir + '/' + experimentName
-					experimentCommand = "ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 1"
-					if isLoggedPatch
-						experimentCommand += ' --logged'
-					end
-					IO.popen(experimentCommand) do |experimentOutput|
-						results[patchName][experimentName] = experimentOutput.read
-						if File.exist?('zones/itm.log')
-							FileUtils::mkdir_p("results/#{experimentName}")
-							FileUtils::copy('zones/itm.log', "results/#{experimentName}/#{patchName}.itm.log")
+					puts "Running against patch #{patchName} ..."
+					experiments.each do |experimentName|
+						experimentName = ExperimentsDir + '/' + experimentName
+						FileUtils::mkdir_p("results/#{cpuCount}_cpus/#{experimentName}")
+						experimentCommand = "ruby #{experimentName} #{BindDir} #{ExperimentsDir} 3000 named.conf 1 #{cpuCount} results/#{cpuCount}_cpus/#{experimentName}/#{patchName}"
+						if isLoggedPatch
+							experimentCommand += ' --logged'
+						end
+						IO.popen(experimentCommand) do |experimentOutput|
+							results[patchName][experimentName] = experimentOutput.read
 						end
 					end
 				end
+			else
+				raise "make failed with error #{$?}!"
 			end
-		else
-			raise "make failed with error #{$?}!"
-		end
 		
-		system("patch --reverse -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
-	end
+			system("patch --reverse -p1 -d #{BindDir} < #{PatchesDir + '/' + patchName}")
+		end
 
-	results.sort.each do |pair|
-		puts "Results for #{pair[0]}:"
-		pair[1].each do |experimentName, result|
-			printf("\t%30s\t%s\n", experimentName.match(/#{ExperimentsDir}\/(.+)\.experiment\.rb/)[1], result.strip)
+		puts "Results for #{cpuCount} CPUs:"
+		results.sort.each do |pair|
+			puts "Results for #{pair[0]}:"
+			pair[1].each do |experimentName, result|
+				printf("\t%30s\t%s\n", experimentName.match(/#{ExperimentsDir}\/(.+)\.experiment\.rb/)[1], result.strip)
+			end
 		end
 	end
 end

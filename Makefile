@@ -16,7 +16,7 @@ CFLAGS += \
 	-DISC_MUTEX_PROFILE=1
 
 LIBS += \
-	$(PWD)/xCalls/src/libtxc.a \
+	$(PWD)/xCalls/build/libtxc.a \
 	
 CONFIGURE_OPTIONS = --enable-threads --with-openssl=no
 BIND_DIRECTORY = bind-9.3.5-P2
@@ -26,7 +26,7 @@ EXPERIMENTS_DIRECTORY = experiments
 .PHONY: default_target
 default_target: experiments
 
-xCalls/src/libtxc.a:
+xCalls/build/libtxc.a:
 	@echo "Building XCalls ..."
 	@export CC=`which icc` && \
 		scons -C xCalls linkage=static
@@ -58,7 +58,7 @@ $(BIND_DIRECTORY).tar.gz:
 	@echo "Downloading $@ ..."
 	@curl -s http://ftp.isc.org/isc/bind9/9.3.5-P2/bind-9.3.5-P2.tar.gz > $@
 
-$(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz xCalls/src/libtxc.a
+$(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz xCalls/build/libtxc.a
 	@echo "Unarchiving Vanilla BIND ..."
 	@tar xzf $<
 	@echo "Configuring BIND ..."
@@ -92,7 +92,8 @@ clean: clear empty_cores
 	@rm -f $(EXPERIMENTS_DIRECTORY)/queries.dat
 	@rm -f zones/db.example.com
 	@rm -f named.conf
-	scons -C xCalls -c
+	@scons -C xCalls -c
+	@rm -Rf results
 
 .PHONY: clear
 clear: empty_cores

@@ -15,8 +15,11 @@ ExperimentsRoot = if ARGV[1][-1..-1] == '/'
 Port            = ARGV[2].to_i
 Configuration   = ARGV[3]
 Repetitions     = ARGV[4].to_i
-Logged          = (ARGV[5] == '--logged')
+CpuCount        = ARGV[5].to_i
+ReportFile      = ARGV[6]
+Logged          = (ARGV[7] == '--logged')
 
+require 'fileutils'
 
 IO.popen('-') do |pipe|
 	if pipe.nil?
@@ -27,6 +30,7 @@ IO.popen('-') do |pipe|
 			puts "BIND has been killed."
 		end
 	else
+		report = File.new(ReportFile, 'w')
 		#Wait for BIND to start
 		$stderr.puts pipe.gets
 		
@@ -34,16 +38,19 @@ IO.popen('-') do |pipe|
 		totalQps = 0
 		Repetitions.times do |repNumber|
 			IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
-			         "-p #{Port} -d #{ExperimentsRoot}/queries.dat -q 400")                do |result|
+			         "-p #{Port} -d #{ExperimentsRoot}/queries.dat -q 400 -l 30")                do |result|
 				$stderr.puts "Running Queryperf excercise #{repNumber} ..."
 				qps = result.readlines[-2].split[3].to_i
+				report.puts "#{qps} queries per second"
 				totalQps += qps
 			end
 		end
 		
 		killBind
 		$stderr.puts pipe.gets
-		$stderr.puts "#{totalQps / Repetitions} queries per second"
-		puts "#{totalQps / Repetitions} queries per second"
+		
+		report.puts "AVERAGE: #{totalQps / Repetitions} queries per second"
+		report.close
+		puts "Average of #{totalQps / Repetitions} queries per second"
 	end
 end
