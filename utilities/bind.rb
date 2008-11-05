@@ -1,9 +1,9 @@
 require 'open3'
 
 def startBind(logged=false)
-	commandString = "export ITM_STATISTICS=simple; #{BindRoot}/bin/named/named -f -p #{Port} -c #{Configuration}"
+	commandString = "export ITM_STATISTICS=simple; #{BindRoot}/bin/named/named -f -p #{Port} -c #{Configuration} -n #{CpuCount}"
 	if logged
-		commandString += ' -d 5'
+		commandString += ' -d 3'
 	end
 	
 	Open3.popen3(commandString) do |bindIn, bindOut, bindErr|
@@ -24,6 +24,7 @@ def killBind
 	
 	
 	Process.kill('INT', bindPid)
+	sleep(2)
 	
 	bindPid
 end

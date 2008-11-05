@@ -15,7 +15,11 @@ ExperimentsRoot = if ARGV[1][-1..-1] == '/'
 Port            = ARGV[2].to_i
 Configuration   = ARGV[3]
 Repetitions     = ARGV[4].to_i
-Logged          = (ARGV[5] == '--logged')
+CpuCount        = ARGV[5].to_i
+ReportFile      = ARGV[6]
+Logged          = (ARGV[7] == '--logged')
+
+require 'fileutils'
 
 class TransactionStatistics
  	attr_reader :transactions
@@ -26,6 +30,7 @@ class TransactionStatistics
 		@transactions = Array.new
 		@serialTransitions = Array.new
 		@retries = Array.new
+		@userRetries = Array.new
 	end
 	
 	def record(results)
@@ -42,6 +47,12 @@ class TransactionStatistics
 				@retries.push(results[:retries])
 			else
 				@retries.push(0)
+			end
+			
+			if results.has_key? :user_retries
+				@userRetries.push(results[:user_retries])
+			else
+				@userRetries.push(0)
 			end
 		else
 			raise "Tried to record nil results!"
@@ -64,13 +75,19 @@ class TransactionStatistics
 			totalRetries += number
 		end
 		
+		totalUserRetries = 0
+		@userRetries.each do |number|
+			totalUserRetries += number
+		end
+		
 		if @transactions.length == 0
-			return {:transactions => 0, :serialTransitions => 0, :retries => 0}
+			return {:transactions => 0, :serialTransitions => 0, :retries => 0, :userRetries => 0}
 		else
 			return {
 				:transactions => totalTransactions / @transactions.length,
 				:serialTransitions => totalSerialTransitions / @serialTransitions.length,
-				:retries => totalRetries / @retries.length
+				:retries => totalRetries / @retries.length,
+				:userRetries => totalUserRetries / @userRetries.length
 				}
 		end
 	end
@@ -85,10 +102,18 @@ def pieceHash(pieceArray)
 	when 'SerialTransitions'
 		{ :serialTransitions => pieceArray[3].to_f }
 	when 'Retries'
-		{ :retries => pieceArray[3].to_f }
+		{ :retries => pieceArray[5].to_f }
+	when 'UserRetries'
+		{ :user_retries => pieceArray[5].to_f }
 	else
 		Hash.new
 	end
+end
+
+if not File.exist?('zones/txc.ini')
+	txcIniFile = File.new('zones/txc.ini', 'w')
+	txcIniFile.puts 'statistics=enabled'
+	txcIniFile.close
 end
 
 # Run experiment
@@ -98,8 +123,15 @@ Repetitions.times do |repNumber|
 	if File.exist?('zones/itm.log')
 		File.delete('zones/itm.log')
 	end
+	if File.exist?('zones/txc.stats')
+		File.delete('zones/txc.stats')
+	end
+	
 	IO.popen("-", "r+") do |pipe|
 		if pipe.nil?
+			system('opcontrol --reset')
+			system('opcontrol --start')
+			sleep(4)
 			startBind(Logged) do |bindIn, bindOut, bindErr|
 				$stdout.puts "Started BIND!"
 
@@ -114,7 +146,7 @@ Repetitions.times do |repNumber|
 
 			# Run queryperf against BIND!
 			IO.popen("#{BindRoot}/contrib/queryperf/queryperf " +
-			         "-p #{Port} -q 400 -d #{ExperimentsRoot}/queries.dat", "r") do |queryperfStdio|
+			         "-p #{Port} -q 400 -d #{ExperimentsRoot}/queries.dat -l 30", "r") do |queryperfStdio|
 				$stderr.puts "Started queryperf!"
 				$stderr.puts "Waiting for queryperf to finish..."
 				queryperfStdio.readlines
@@ -123,11 +155,19 @@ Repetitions.times do |repNumber|
 			# Kill BIND and synchronize such that itm.log has been created.
 			killBind
 			$stderr.puts pipe.gets
+			
+			system('opcontrol --stop > /dev/null')
+			system('opcontrol --dump')
 
-			# Read statistics
-			until File.exist?("zones/itm.log")
+			# Copy full statistics
+			until File.exist?("zones/itm.log") # and File.exist?('zones/txc.stats')
 				sleep(0.5)
 			end
+			FileUtils::copy('zones/itm.log', ReportFile + ".itm.log.#{repNumber}")
+			FileUtils::copy('zones/txc.stats', ReportFile + ".txc.stats.#{repNumber}")
+			system("opreport -l -c > #{ReportFile}.oprofile.#{repNumber}")
+			
+			# Read Statistics
 			logFile = File.open("zones/itm.log", "r")
 			line = logFile.readlines
 
@@ -149,6 +189,11 @@ Repetitions.times do |repNumber|
 	end
 end
 
+if File.exist?('zones/txc.ini')
+	File.delete('zones/txc.ini')
+end
+
 puts "#{stats.average[:transactions]} transactions, " +
-	"#{stats.average[:serialTransitions] * 100}% forced serial, " +
-	"#{stats.average[:retries] * 100}% retried"
+	"#{stats.average[:retries]} conflict retries, " +
+	"#{stats.average[:userRetries]} explicit retries, " +
+	"#{stats.average[:serialTransitions] * 100}% forced serial."
