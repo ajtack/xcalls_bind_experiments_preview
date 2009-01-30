@@ -16,7 +16,7 @@ CFLAGS += \
 	-DISC_MUTEX_PROFILE=1
 
 LIBS += \
-	$(PWD)/xCalls/build/libtxc.a \
+	$(PWD)/xCalls/src/libtxc.a \
 	
 CONFIGURE_OPTIONS = --enable-threads --with-openssl=no
 BIND_DIRECTORY = bind-9.3.5-P2
@@ -58,7 +58,7 @@ $(BIND_DIRECTORY).tar.gz:
 	@echo "Downloading $@ ..."
 	@curl -s http://ftp.isc.org/isc/bind9/9.3.5-P2/bind-9.3.5-P2.tar.gz > $@
 
-$(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz xCalls/build/libtxc.a
+$(BIND_DIRECTORY): $(BIND_DIRECTORY).tar.gz xCalls/src/libtxc.a
 	@echo "Unarchiving Vanilla BIND ..."
 	@tar xzf $<
 	@echo "Configuring BIND ..."

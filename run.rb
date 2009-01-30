@@ -16,7 +16,7 @@ PatchesDir     = if ARGV[2][-1..-1] == '/'
 
 require 'fileutils'
 
-NumberOfCpusToUse = [7, 3]
+NumberOfCpusToUse = [1, 2, 3, 4, 5, 6, 7, 8]
 
 NumberOfCpusToUse.each do |cpuCount|
 	Dir.open(PatchesDir) do |PatchDir|
